@@ -11,10 +11,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Trash2, Edit3, PlusCircle, Save, XCircle, LogOut, Clock } from 'lucide-react';
+import { Trash2, Edit3, PlusCircle, Save, XCircle, LogOut, Clock, UserCog, FilePlus, ShieldAlert, Ban } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface PlayerCardProps {
   player: Player;
@@ -56,12 +58,10 @@ export function PlayerCard({
 
   const isCashedOut = player.departureStatus !== 'active' && player.cashedOutAmount !== undefined;
 
-  // Live balance reflects current financial state with bank, excluding final cash out amount
   const liveBalance = useMemo(() => {
     return player.initialBalance + player.transactions.reduce((sum, tx) => sum + tx.amount, 0);
   }, [player.initialBalance, player.transactions]);
 
-  // Final net result after cashing out
   const finalNetResult = useMemo(() => {
     if (isCashedOut && player.cashedOutAmount !== undefined) {
       return player.cashedOutAmount + liveBalance;
@@ -73,9 +73,9 @@ export function PlayerCard({
 
   useEffect(() => {
     if (isCashOutDialogOpen) {
-      // Pre-fill cash-out amount with current chip value (absolute of liveBalance if negative, else 0)
       const suggestedChipValue = liveBalance < 0 ? Math.abs(liveBalance) : 0;
       setCashOutAmountInput(suggestedChipValue.toString());
+      setDepartureStatusInput('stayed_till_end'); // Reset departure status on dialog open
     }
   }, [isCashOutDialogOpen, liveBalance]);
 
@@ -84,7 +84,7 @@ export function PlayerCard({
     if (editingName.trim()) {
       onUpdatePlayerName(player.id, editingName.trim());
       setIsEditingName(false);
-      toast({ title: "Success", description: "Player name updated." });
+      toast({ title: "Name Updated", description: `Player name changed to ${editingName.trim()}.` });
     } else {
       toast({ title: "Error", description: "Player name cannot be empty.", variant: "destructive" });
     }
@@ -95,7 +95,7 @@ export function PlayerCard({
     if (!isNaN(newBalance)) {
       onUpdateInitialBalance(player.id, newBalance);
       setIsEditingInitialBalance(false);
-      toast({ title: "Success", description: "Initial balance updated." });
+      toast({ title: "Balance Updated", description: `Initial balance set to ${newBalance} Rs.` });
     } else {
       toast({ title: "Error", description: "Invalid balance amount.", variant: "destructive" });
     }
@@ -115,7 +115,7 @@ export function PlayerCard({
     onAddTransaction(player.id, amount, newTransactionDescription.trim());
     setNewTransactionAmount('');
     setNewTransactionDescription('');
-    toast({ title: "Success", description: "Transaction added." });
+    toast({ title: "Transaction Added", description: `Added '${newTransactionDescription.trim()}' for ${amount} Rs.` });
   };
   
   const openEditTransactionModal = (tx: Transaction) => {
@@ -139,7 +139,7 @@ export function PlayerCard({
     }
     onEditTransaction(player.id, editingTransaction.id, amount, editTransactionDescription.trim());
     setEditingTransaction(null); 
-    toast({ title: "Success", description: "Transaction updated." });
+    toast({ title: "Transaction Updated", description: "Transaction details saved." });
   };
 
   const handleCashOutFormSubmit = (e: React.FormEvent) => {
@@ -150,10 +150,9 @@ export function PlayerCard({
       return;
     }
     onCashOutPlayer(player.id, amount, departureStatusInput);
-    setIsCashOutDialogOpen(false);
-    setCashOutAmountInput(''); // Reset for next time
+    setIsCashOutDialogOpen(false); // Close dialog
+    setCashOutAmountInput(''); 
   };
-
 
   return (
     <Dialog open={!!editingTransaction || isCashOutDialogOpen} onOpenChange={(isOpen) => {
@@ -162,108 +161,116 @@ export function PlayerCard({
         setIsCashOutDialogOpen(false);
       }
     }}>
-      <Card className={`w-full shadow-lg flex flex-col h-full ${isCashedOut ? 'bg-muted/50' : ''}`}>
-        <CardHeader>
+      <Card className={cn(
+        "w-full shadow-xl flex flex-col h-full border transition-all duration-300",
+        isCashedOut ? "border-muted/30 bg-card/50 opacity-70" : "border-border/50 hover:shadow-primary/20 hover:border-primary/50"
+      )}>
+        <CardHeader className="pb-4">
           <div className="flex justify-between items-start">
             <div>
               {isEditingName && !isCashedOut ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mb-1">
                   <Input 
                     value={editingName} 
                     onChange={(e) => setEditingName(e.target.value)} 
-                    className="text-xl font-semibold p-1 h-auto"
+                    className="text-2xl font-semibold p-1 h-auto bg-input"
                     aria-label={`Edit name for ${player.name}`}
-                    disabled={isCashedOut}
                   />
-                  <Button size="icon" variant="ghost" onClick={handleNameSave} aria-label="Save name" disabled={isCashedOut}><Save className="h-4 w-4 text-primary" /></Button>
-                  <Button size="icon" variant="ghost" onClick={() => { setIsEditingName(false); setEditingName(player.name);}} aria-label="Cancel name edit" disabled={isCashedOut}><XCircle className="h-4 w-4 text-destructive" /></Button>
+                  <Button size="icon" variant="ghost" onClick={handleNameSave} aria-label="Save name"><Save className="h-5 w-5 text-primary" /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => { setIsEditingName(false); setEditingName(player.name);}} aria-label="Cancel name edit"><XCircle className="h-5 w-5 text-muted-foreground" /></Button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-2xl">{player.name}</CardTitle>
-                  {!isCashedOut && <Button size="icon" variant="ghost" onClick={() => setIsEditingName(true)} aria-label={`Edit name for ${player.name}`}><Edit3 className="h-4 w-4" /></Button>}
+                <div className="flex items-center gap-2 mb-1">
+                  <CardTitle className="text-2xl font-semibold text-foreground">{player.name}</CardTitle>
+                  {!isCashedOut && <Button size="icon" variant="ghost" onClick={() => setIsEditingName(true)} aria-label={`Edit name for ${player.name}`} className="text-muted-foreground hover:text-primary"><Edit3 className="h-4 w-4" /></Button>}
                 </div>
               )}
-              <CardDescription className="mt-1">
+              <CardDescription className="text-sm">
                   {isEditingInitialBalance && !isCashedOut ? (
-                       <div className="flex items-center gap-2 mt-1">
-                          <span className="text-sm">Initial:</span>
+                       <div className="flex items-center gap-2 mt-1 text-xs">
+                          <span>Initial Balance:</span>
                           <Input 
                               type="number" 
                               value={editingInitialBalance} 
                               onChange={(e) => setEditingInitialBalance(e.target.value)} 
-                              className="p-1 h-auto w-24"
+                              className="p-1 h-7 w-20 bg-input text-xs"
                               aria-label={`Edit initial balance for ${player.name}`}
-                              disabled={isCashedOut}
                           />
-                          <Button size="icon" variant="ghost" onClick={handleInitialBalanceSave} aria-label="Save initial balance" disabled={isCashedOut}><Save className="h-4 w-4 text-primary" /></Button>
-                          <Button size="icon" variant="ghost" onClick={() => { setIsEditingInitialBalance(false); setEditingInitialBalance(player.initialBalance.toString());}} aria-label="Cancel initial balance edit" disabled={isCashedOut}><XCircle className="h-4 w-4 text-destructive" /></Button>
+                          <Button size="icon" variant="ghost" onClick={handleInitialBalanceSave} aria-label="Save initial balance" className="h-6 w-6"><Save className="h-4 w-4 text-primary" /></Button>
+                          <Button size="icon" variant="ghost" onClick={() => { setIsEditingInitialBalance(false); setEditingInitialBalance(player.initialBalance.toString());}} aria-label="Cancel initial balance edit" className="h-6 w-6"><XCircle className="h-4 w-4 text-muted-foreground" /></Button>
                       </div>
                   ) : (
-                      <div className="flex items-center gap-2 mt-1">
-                          <span>Initial Balance: {player.initialBalance} Rs.</span>
-                          {!isCashedOut && <Button size="icon" variant="ghost" onClick={() => setIsEditingInitialBalance(true)} aria-label={`Edit initial balance for ${player.name}`}><Edit3 className="h-4 w-4" /></Button>}
+                      <div className="flex items-center gap-1 mt-1 text-xs">
+                          <span>Initial: {player.initialBalance} Rs.</span>
+                          {!isCashedOut && <Button size="icon" variant="ghost" onClick={() => setIsEditingInitialBalance(true)} aria-label={`Edit initial balance for ${player.name}`} className="h-6 w-6 text-muted-foreground hover:text-primary"><Edit3 className="h-3 w-3" /></Button>}
                       </div>
                   )}
               </CardDescription>
               {isCashedOut && player.cashedOutAmount !== undefined && (
-                <div className="mt-2 text-sm space-y-1">
-                  <p className="font-semibold text-primary">Cashed Out: {player.cashedOutAmount} Rs.</p>
-                  <p className="flex items-center">
-                    <Clock className="h-4 w-4 mr-1 text-muted-foreground" /> 
+                <div className="mt-2 text-xs space-y-0.5 p-2 rounded-md bg-muted/50 border border-dashed border-muted-foreground/30">
+                  <p className="font-semibold text-primary flex items-center"><LogOut className="h-3 w-3 mr-1.5"/>Cashed Out: {player.cashedOutAmount} Rs.</p>
+                  <p className="flex items-center text-muted-foreground">
+                    <Clock className="h-3 w-3 mr-1.5" /> 
                     {player.departureStatus === 'left_early' ? 'Left Early' : 'Stayed till End'}
                     {player.cashOutTimestamp && ` at ${format(new Date(player.cashOutTimestamp), 'p')}`}
                   </p>
                 </div>
               )}
             </div>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" aria-label={`Delete player ${player.name}`}>
-                  <Trash2 className="h-5 w-5" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete player {player.name} and all their data.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => onDeletePlayer(player.id)} className="bg-destructive hover:bg-destructive/90">
-                    Delete Player
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <div className="flex flex-col items-end">
+              {isCashedOut && <Badge variant="outline" className="mb-2 bg-primary/10 text-primary border-primary/30 pointer-events-none text-xs py-0.5 px-1.5">Cashed Out</Badge>}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" aria-label={`Delete player ${player.name}`} disabled={isCashedOut && player.transactions.length > 0}>
+                    <Trash2 className="h-5 w-5" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Player: {player.name}?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete this player and all their associated data from the current game.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => onDeletePlayer(player.id)} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
+                      Confirm Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
         </CardHeader>
-        <CardContent className="flex-grow flex flex-col gap-4">
+        <CardContent className="flex-grow flex flex-col gap-4 pt-0 pb-4">
+          <Separator className="my-2 bg-border/40"/>
           <div className="flex-grow">
-              <h4 className="font-semibold mb-2 text-md">Transactions:</h4>
-              {player.transactions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No transactions yet.</p>
+              <h4 className="font-semibold mb-2 text-base text-foreground/90">Transactions:</h4>
+              {player.transactions.length === 0 && !isCashedOut ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">No transactions yet.</p>
+              ) : player.transactions.length === 0 && isCashedOut ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">No transactions recorded before cash-out.</p>
               ) : (
-              <ScrollArea className="h-[150px] pr-3">
+              <ScrollArea className="h-[160px] pr-3 -mr-3"> {/* Negative margin to hide scrollbar visually if not needed but keep functionality */}
                   <ul className="space-y-2">
                   {player.transactions.map((tx) => (
-                      <li key={tx.id} className="text-sm flex justify-between items-center p-2 rounded-md border bg-muted/20 hover:bg-muted/50 transition-colors">
+                      <li key={tx.id} className="text-sm flex justify-between items-center p-2.5 rounded-md border border-border/30 bg-card hover:bg-muted/30 transition-colors group">
                       <div>
-                          <span className="font-medium">{tx.description}</span>: <span className={tx.amount < 0 ? 'text-red-500' : 'text-emerald-600'}>{tx.amount} Rs.</span>
-                          <p className="text-xs text-muted-foreground">{new Date(tx.timestamp).toLocaleString()}</p>
+                          <span className="font-medium text-foreground/90">{tx.description}</span>
+                          <p className={`text-xs ${tx.amount < 0 ? 'text-destructive' : 'text-emerald-500'}`}>{tx.amount > 0 ? '+' : ''}{tx.amount} Rs.</p>
+                          <p className="text-xs text-muted-foreground/70 pt-0.5">{format(new Date(tx.timestamp), "MMM d, p")}</p>
                       </div>
                       {!isCashedOut && (
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <DialogTrigger asChild>
-                               <Button variant="ghost" size="icon" onClick={() => openEditTransactionModal(tx)} aria-label="Edit transaction">
+                               <Button variant="ghost" size="icon" onClick={() => openEditTransactionModal(tx)} aria-label="Edit transaction" className="h-7 w-7 text-muted-foreground hover:text-primary">
                                  <Edit3 className="h-4 w-4" />
                                </Button>
                             </DialogTrigger>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" aria-label="Delete transaction">
+                                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive h-7 w-7" aria-label="Delete transaction">
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </AlertDialogTrigger>
@@ -276,7 +283,7 @@ export function PlayerCard({
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => onDeleteTransaction(player.id, tx.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                                  <AlertDialogAction onClick={() => onDeleteTransaction(player.id, tx.id)} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">Delete</AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
@@ -290,10 +297,12 @@ export function PlayerCard({
           </div>
 
           {!isCashedOut && (
-            <form onSubmit={handleAddTransactionFormSubmit} className="space-y-3 pt-4 border-t">
-              <h5 className="font-semibold text-sm">Add New Transaction</h5>
+            <>
+            <Separator className="my-2 bg-border/40"/>
+            <form onSubmit={handleAddTransactionFormSubmit} className="space-y-3 pt-2">
+              <h5 className="font-semibold text-sm text-foreground/90 flex items-center"><FilePlus className="h-4 w-4 mr-2 text-primary"/>Add Transaction</h5>
               <div>
-                <Label htmlFor={`tx-desc-${player.id}`} className="text-xs">Description</Label>
+                <Label htmlFor={`tx-desc-${player.id}`} className="text-xs font-medium text-muted-foreground">Description</Label>
                 <Input
                   id={`tx-desc-${player.id}`}
                   type="text"
@@ -301,47 +310,55 @@ export function PlayerCard({
                   onChange={(e) => setNewTransactionDescription(e.target.value)}
                   placeholder="e.g., Buy-in, Food"
                   required
-                  className="mt-1 h-9"
+                  className="mt-1 h-9 bg-input text-sm"
+                  disabled={isCashedOut}
                 />
               </div>
               <div>
-                <Label htmlFor={`tx-amount-${player.id}`} className="text-xs">Amount (Rs.)</Label>
+                <Label htmlFor={`tx-amount-${player.id}`} className="text-xs font-medium text-muted-foreground">Amount (Rs.)</Label>
                 <Input
                   id={`tx-amount-${player.id}`}
                   type="number"
                   step="any"
                   value={newTransactionAmount}
                   onChange={(e) => setNewTransactionAmount(e.target.value)}
-                  placeholder="e.g., 50 (to bank) or -100 (from bank)"
+                  placeholder="e.g., 50 or -100"
                   required
-                  className="mt-1 h-9"
+                  className="mt-1 h-9 bg-input text-sm"
+                  disabled={isCashedOut}
                 />
-                <p className="text-xs text-muted-foreground mt-1">Positive if giving to bank, negative if taking from bank.</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">Positive if player gives to bank, negative if player takes from bank.</p>
               </div>
-              <Button type="submit" size="sm" className="w-full">
+              <Button type="submit" size="sm" className="w-full" disabled={isCashedOut}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Add Transaction
               </Button>
             </form>
+            </>
           )}
+          
           {!isCashedOut && (
              <DialogTrigger asChild>
-                <Button variant="outline" onClick={() => setIsCashOutDialogOpen(true)} className="w-full mt-2">
+                <Button variant="outline" onClick={() => setIsCashOutDialogOpen(true)} className="w-full mt-3 border-primary/50 text-primary hover:bg-primary/10 hover:text-primary" disabled={isCashedOut}>
                   <LogOut className="mr-2 h-4 w-4" /> Cash Out Player
                 </Button>
             </DialogTrigger>
           )}
 
         </CardContent>
-        <CardFooter className="bg-secondary/30 p-4">
+        <CardFooter className={cn(
+            "p-4 mt-auto border-t",
+            isCashedOut ? "bg-muted/20 border-muted/30" : "bg-card/50 border-border/40",
+            balanceToDisplay > 0 ? "border-t-emerald-500/30" : balanceToDisplay < 0 ? "border-t-destructive/30" : "border-border/40"
+        )}>
           <div className="w-full">
-            <p className={`text-lg font-bold ${balanceToDisplay > 0 ? 'text-emerald-600' : balanceToDisplay < 0 ? 'text-red-500' : 'text-foreground'}`}>
-              {isCashedOut ? 'Final Result: ' : (balanceToDisplay > 0 ? 'Net Win: ' : (balanceToDisplay < 0 ? 'Net Loss: ' : 'Net Result: '))}
+            <p className={`text-lg font-bold ${balanceToDisplay > 0 ? 'text-emerald-500' : balanceToDisplay < 0 ? 'text-destructive' : 'text-foreground'}`}>
+              {isCashedOut ? 'Final Result: ' : (balanceToDisplay >= 0 ? 'Net Profit: ' : 'Net Loss: ')}
               {balanceToDisplay === 0 ? '0.00' : Math.abs(balanceToDisplay).toFixed(2)} Rs.
             </p>
-            <p className={`text-sm ${balanceToDisplay > 0 ? 'text-emerald-600' : balanceToDisplay < 0 ? 'text-red-500' : 'text-foreground'}`}>
+            <p className={`text-xs ${balanceToDisplay > 0 ? 'text-emerald-500/80' : balanceToDisplay < 0 ? 'text-destructive/80' : 'text-muted-foreground'}`}>
               {isCashedOut 
-                ? (balanceToDisplay > 0 ? 'Player profited this amount.' : balanceToDisplay < 0 ? 'Player lost this amount.' : 'Player broke even.')
-                : (balanceToDisplay > 0 ? 'Bank owes player this amount.' : balanceToDisplay < 0 ? 'Player owes bank this amount.' : 'Currently even with the bank.')
+                ? (balanceToDisplay > 0 ? 'Player took home this profit.' : balanceToDisplay < 0 ? 'Player incurred this loss.' : 'Player broke even.')
+                : (balanceToDisplay > 0 ? 'Currently up this amount from bank.' : balanceToDisplay < 0 ? 'Currently owes bank this amount.' : 'Currently even with the bank.')
               }
             </p>
           </div>
@@ -349,23 +366,24 @@ export function PlayerCard({
 
         {/* Edit Transaction Dialog */}
         {editingTransaction && (
-          <DialogContent>
+          <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Edit Transaction</DialogTitle>
+              <DialogTitle className="flex items-center"><Edit3 className="mr-2 h-5 w-5 text-primary"/>Edit Transaction</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleEditTransactionFormSubmit} className="space-y-4">
+            <form onSubmit={handleEditTransactionFormSubmit} className="space-y-4 py-4">
               <div>
-                <Label htmlFor="edit-tx-desc">Description</Label>
+                <Label htmlFor="edit-tx-desc" className="text-sm">Description</Label>
                 <Input
                   id="edit-tx-desc"
                   type="text"
                   value={editTransactionDescription}
                   onChange={(e) => setEditTransactionDescription(e.target.value)}
                   required
+                  className="mt-1 bg-input"
                 />
               </div>
               <div>
-                <Label htmlFor="edit-tx-amount">Amount (Rs.)</Label>
+                <Label htmlFor="edit-tx-amount" className="text-sm">Amount (Rs.)</Label>
                 <Input
                   id="edit-tx-amount"
                   type="number"
@@ -373,11 +391,12 @@ export function PlayerCard({
                   value={editTransactionAmount}
                   onChange={(e) => setEditTransactionAmount(e.target.value)}
                   required
+                  className="mt-1 bg-input"
                 />
               </div>
               <DialogFooter>
                 <DialogClose asChild>
-                  <Button type="button" variant="outline" onClick={() => setEditingTransaction(null)}>Cancel</Button>
+                  <Button type="button" variant="outline">Cancel</Button>
                 </DialogClose>
                 <Button type="submit">Save Changes</Button>
               </DialogFooter>
@@ -387,52 +406,74 @@ export function PlayerCard({
 
         {/* Cash Out Dialog */}
         {isCashOutDialogOpen && (
-            <DialogContent onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+            <DialogContent className="sm:max-w-[425px]" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
                 <DialogHeader>
-                    <DialogTitle>Cash Out Player: {player.name}</DialogTitle>
+                    <DialogTitle className="flex items-center"><LogOut className="mr-2 h-5 w-5 text-primary"/>Cash Out: {player.name}</DialogTitle>
+                    <CardDescription>Finalize this player's session by recording their cash-out amount and departure status.</CardDescription>
                 </DialogHeader>
-                <form onSubmit={handleCashOutFormSubmit} className="space-y-4">
+                <form onSubmit={handleCashOutFormSubmit} className="space-y-6 py-4">
                     <div>
-                        <Label htmlFor="cash-out-amount">Cash-Out Amount (Rs.)</Label>
+                        <Label htmlFor="cash-out-amount" className="text-sm font-medium">Cash-Out Amount (Rs.)</Label>
                         <Input
                             id="cash-out-amount"
                             type="number"
                             step="any"
                             value={cashOutAmountInput}
                             onChange={(e) => setCashOutAmountInput(e.target.value)}
-                            placeholder="Enter amount player is cashing out"
+                            placeholder="Enter amount player is cashing out with"
                             required
+                            className="mt-1 bg-input text-base py-2.5"
                         />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Current chip value (if owed to bank): {liveBalance < 0 ? Math.abs(liveBalance).toFixed(2) : "0.00"} Rs.
+                        <p className="text-xs text-muted-foreground mt-1.5">
+                          Player currently owes bank: <span className="font-semibold">{liveBalance < 0 ? Math.abs(liveBalance).toFixed(2) : "0.00"} Rs.</span>
+                        </p>
+                         <p className="text-xs text-muted-foreground">
+                           This is the actual amount of money the player is taking from the table.
                         </p>
                     </div>
                     <div>
-                        <Label>Departure Status</Label>
+                        <Label className="text-sm font-medium">Departure Status</Label>
                         <RadioGroup 
                             value={departureStatusInput} 
                             onValueChange={(value: 'left_early' | 'stayed_till_end') => setDepartureStatusInput(value)}
-                            className="mt-1"
+                            className="mt-2 space-y-2"
                         >
-                            <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-3 p-3 rounded-md border border-border has-[:checked]:border-primary has-[:checked]:bg-primary/10">
                                 <RadioGroupItem value="stayed_till_end" id={`status-end-${player.id}`} />
-                                <Label htmlFor={`status-end-${player.id}`}>Stayed till End</Label>
+                                <Label htmlFor={`status-end-${player.id}`} className="font-normal cursor-pointer flex-1">Stayed till End of Game</Label>
                             </div>
-                            <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-3 p-3 rounded-md border border-border has-[:checked]:border-primary has-[:checked]:bg-primary/10">
                                 <RadioGroupItem value="left_early" id={`status-early-${player.id}`} />
-                                <Label htmlFor={`status-early-${player.id}`}>Left Early</Label>
+                                <Label htmlFor={`status-early-${player.id}`} className="font-normal cursor-pointer flex-1">Left Game Early</Label>
                             </div>
                         </RadioGroup>
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="mt-2">
                         <Button type="button" variant="outline" onClick={() => setIsCashOutDialogOpen(false)}>Cancel</Button>
-                        <Button type="submit">Confirm Cash Out</Button>
+                        <Button type="submit" className="bg-primary hover:bg-primary/90">Confirm Cash Out</Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
         )}
       </Card>
     </Dialog>
+  );
+}
+
+interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary';
+}
+
+function Badge({ className, variant, ...props }: BadgeProps) {
+  const baseClasses = "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold transition-colors focus:outline-none";
+  const variants = {
+    default: "border-transparent bg-primary text-primary-foreground",
+    destructive: "border-transparent bg-destructive text-destructive-foreground",
+    outline: "text-foreground border-current",
+    secondary: "border-transparent bg-secondary text-secondary-foreground",
+  };
+  return (
+    <div className={cn(baseClasses, variant ? variants[variant] : variants.default, className)} {...props} />
   );
 }
 

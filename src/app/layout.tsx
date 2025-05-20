@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Poker Balance Tracker',
-  description: 'Manage your poker game expenses and balances easily.',
+  title: 'Suncity Poker Ledger',
+  description: 'Manage your poker game expenses and balances with Suncity Poker Ledger.',
 };
 
 export default function RootLayout({
@@ -24,8 +24,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html lang="en" className="dark">
+      <body className={`${geistSans.variable} ${geistMono.variable} font-sans`}>
         {children}
         <Toaster />
       </body>

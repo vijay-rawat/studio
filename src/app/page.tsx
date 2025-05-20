@@ -7,9 +7,10 @@ import type { Player, Transaction } from '@/types';
 import { AddPlayerForm } from '@/components/add-player-form';
 import { PlayerCard } from '@/components/player-card';
 import { SummaryDisplay } from '@/components/summary-display';
-import { PiggyBank, Users, Landmark, Trash2 } from 'lucide-react';
+import { PiggyBank, Users, Landmark, Trash2, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,8 +34,7 @@ export default function PokerTrackerPage() {
 
   useEffect(() => {
     setIsClient(true);
-    // Load players from local storage
-    const storedPlayers = localStorage.getItem('pokerPlayers');
+    const storedPlayers = localStorage.getItem('pokerPlayersSuncity');
     if (storedPlayers) {
       setPlayers(JSON.parse(storedPlayers));
     }
@@ -42,7 +42,7 @@ export default function PokerTrackerPage() {
 
   useEffect(() => {
     if(isClient) {
-      localStorage.setItem('pokerPlayers', JSON.stringify(players));
+      localStorage.setItem('pokerPlayersSuncity', JSON.stringify(players));
     }
   }, [players, isClient]);
 
@@ -52,7 +52,7 @@ export default function PokerTrackerPage() {
       name,
       initialBalance: DEFAULT_INITIAL_BALANCE,
       transactions: [],
-      departureStatus: 'active', // Initialize departure status
+      departureStatus: 'active',
     };
     setPlayers(prev => [...prev, newPlayer]);
     toast({ title: "Player Added", description: `${name} has been added to the game.` });
@@ -106,28 +106,33 @@ export default function PokerTrackerPage() {
   };
 
   const handleDeletePlayer = (playerId: string) => {
-    setPlayers(prev => prev.filter(p => p.id !== playerId));
-    toast({ title: "Player Deleted", description: "The player has been removed from the game.", variant: "destructive" });
+    const playerToDelete = players.find(p => p.id === playerId);
+    if (playerToDelete) {
+        setPlayers(prev => prev.filter(p => p.id !== playerId));
+        toast({ title: "Player Removed", description: `${playerToDelete.name} has been removed.`, variant: "destructive" });
+    }
   };
 
-  const handleCashOutPlayer = (playerId: string, cashOutAmount: number, departureStatus: 'left_early' | 'stayed_till_end') => {
+ const handleCashOutPlayer = (playerId: string, cashOutAmountInput: number, departureStatusInput: 'left_early' | 'stayed_till_end') => {
     const playerToCashOut = players.find(p => p.id === playerId);
-    const playerName = playerToCashOut ? playerToCashOut.name : "Player";
+    if (!playerToCashOut) return;
 
+    const playerName = playerToCashOut.name;
+    
     setPlayers(prev => prev.map(p => {
       if (p.id === playerId) {
         return {
           ...p,
-          cashOutAmount: cashOutAmount, // Corrected variable name here
-          departureStatus,
+          cashOutAmount: cashOutAmountInput,
+          departureStatus: departureStatusInput,
           cashOutTimestamp: new Date().toISOString(),
         };
       }
       return p;
     }));
-    
     toast({ title: "Player Cashed Out", description: `${playerName} has cashed out.` });
   };
+
 
   const handleResetGame = () => {
     setPlayers([]);
@@ -136,36 +141,44 @@ export default function PokerTrackerPage() {
 
   if (!isClient) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4 md:p-8 bg-gradient-to-br from-background to-secondary/30">
-        <Landmark className="h-16 w-16 text-primary mb-4 animate-pulse" />
-        <p className="text-xl text-foreground animate-pulse">Loading Poker Balances...</p>
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 md:p-8 bg-background">
+        <div className="space-y-4 w-full max-w-md">
+          <Skeleton className="h-12 w-3/4 mx-auto" />
+          <Skeleton className="h-8 w-1/2 mx-auto" />
+          <div className="p-6 border border-border rounded-lg shadow-xl">
+            <Skeleton className="h-8 w-full mb-4" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-secondary/30 py-8 px-4 md:px-8">
-      <header className="text-center mb-10">
-        <div className="inline-flex items-center bg-card p-4 rounded-lg shadow-xl">
-          <PiggyBank className="h-12 w-12 text-primary" />
-          <h1 className="text-4xl font-bold ml-4 text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
-            Poker Balance Tracker
-          </h1>
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary/70 selection:text-primary-foreground">
+      <header className="py-8 border-b border-border/60 bg-card/20 shadow-md">
+        <div className="container mx-auto text-center">
+          <div className="inline-flex items-center gap-3 mb-2">
+            <ShieldCheck className="h-10 w-10 text-primary animate-pulse" />
+            <h1 className="text-4xl md:text-5xl font-bold">
+              Suncity <span className="text-primary">Poker</span> Ledger
+            </h1>
+          </div>
+          <p className="text-muted-foreground text-sm md:text-base max-w-xl mx-auto">
+            Effortlessly track player buy-ins, re-buys, and cash-outs. Default initial balance: {DEFAULT_INITIAL_BALANCE} Rs.
+          </p>
         </div>
-         <p className="text-muted-foreground mt-2 text-sm md:text-base max-w-xl mx-auto">
-          Track player buy-ins, re-buys, and cash-outs. Default initial balance is {DEFAULT_INITIAL_BALANCE} Rs. (taken from bank).
-        </p>
       </header>
 
-      <main className="container mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        <div className="lg:col-span-2 space-y-8">
+      <main className="container mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start py-8 px-4 md:px-0">
+        <div className="lg:col-span-8 space-y-8">
           <AddPlayerForm onAddPlayer={handleAddPlayer} />
           
           {players.length > 0 && (
             <div className="mt-6 text-right">
                <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive">
+                  <Button variant="destructive" size="sm">
                     <Trash2 className="mr-2 h-4 w-4" /> Reset Game
                   </Button>
                 </AlertDialogTrigger>
@@ -178,7 +191,7 @@ export default function PokerTrackerPage() {
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleResetGame} className="bg-destructive hover:bg-destructive/90">
+                    <AlertDialogAction onClick={handleResetGame} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
                       Yes, Reset Game
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -188,11 +201,11 @@ export default function PokerTrackerPage() {
           )}
 
           {players.length === 0 ? (
-            <Card className="mt-8 shadow-lg">
-              <CardContent className="p-10 text-center">
-                <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <p className="text-xl font-semibold text-muted-foreground">No players yet.</p>
-                <p className="text-sm text-muted-foreground">Add players using the form above to start tracking balances.</p>
+            <Card className="mt-8 shadow-xl border-border/50">
+              <CardContent className="p-10 text-center flex flex-col items-center justify-center min-h-[200px]">
+                <Users className="h-20 w-20 text-muted-foreground/50 mx-auto mb-6" />
+                <p className="text-2xl font-semibold text-muted-foreground mb-2">No Players Yet</p>
+                <p className="text-sm text-muted-foreground/80">Use the form above to add players and start tracking balances.</p>
               </CardContent>
             </Card>
           ) : (
@@ -214,12 +227,12 @@ export default function PokerTrackerPage() {
           )}
         </div>
 
-        <aside className="lg:col-span-1">
+        <aside className="lg:col-span-4 lg:sticky lg:top-8">
           {players.length > 0 && <SummaryDisplay players={players} />}
         </aside>
       </main>
-      <footer className="text-center mt-12 py-6 border-t border-border/50">
-        <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} Poker Balance Tracker. May your bluffs be believed.</p>
+      <footer className="text-center mt-12 py-8 border-t border-border/50">
+        <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} Suncity Poker Ledger. Gamble responsibly.</p>
       </footer>
     </div>
   );
