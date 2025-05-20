@@ -6,8 +6,9 @@ import type { Player, Transaction } from '@/types';
 import { AddPlayerForm } from '@/components/add-player-form';
 import { PlayerCard } from '@/components/player-card';
 import { SummaryDisplay } from '@/components/summary-display';
-import { PiggyBank, Users, Landmark } from 'lucide-react';
+import { PiggyBank, Users, Landmark, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   AlertDialog,
   AlertDialogAction,
