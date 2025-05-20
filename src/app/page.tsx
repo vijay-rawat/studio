@@ -118,7 +118,7 @@ export default function PokerTrackerPage() {
       if (p.id === playerId) {
         return {
           ...p,
-          cashedOutAmount,
+          cashOutAmount: cashOutAmount, // Corrected variable name here
           departureStatus,
           cashOutTimestamp: new Date().toISOString(),
         };
