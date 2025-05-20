@@ -1,10 +1,11 @@
+
 "use client";
 
 import type * as React from 'react';
 import { useMemo } from 'react';
 import type { Player } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, TrendingUp, TrendingDown, Scale, Landmark } from 'lucide-react';
+import { BarChart3, TrendingUp, TrendingDown, Scale, Landmark, LogOut } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
