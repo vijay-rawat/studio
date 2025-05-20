@@ -111,10 +111,11 @@ export default function PokerTrackerPage() {
   };
 
   const handleCashOutPlayer = (playerId: string, cashOutAmount: number, departureStatus: 'left_early' | 'stayed_till_end') => {
+    const playerToCashOut = players.find(p => p.id === playerId);
+    const playerName = playerToCashOut ? playerToCashOut.name : "Player";
+
     setPlayers(prev => prev.map(p => {
       if (p.id === playerId) {
-        const playerName = p.name;
-        toast({ title: "Player Cashed Out", description: `${playerName} has cashed out.` });
         return {
           ...p,
           cashedOutAmount,
@@ -124,6 +125,8 @@ export default function PokerTrackerPage() {
       }
       return p;
     }));
+    
+    toast({ title: "Player Cashed Out", description: `${playerName} has cashed out.` });
   };
 
   const handleResetGame = () => {
