@@ -1,3 +1,4 @@
+
 "use client";
 
 import type * as React from 'react';
@@ -51,6 +52,7 @@ export default function PokerTrackerPage() {
       name,
       initialBalance: DEFAULT_INITIAL_BALANCE,
       transactions: [],
+      departureStatus: 'active', // Initialize departure status
     };
     setPlayers(prev => [...prev, newPlayer]);
     toast({ title: "Player Added", description: `${name} has been added to the game.` });
@@ -108,14 +110,28 @@ export default function PokerTrackerPage() {
     toast({ title: "Player Deleted", description: "The player has been removed from the game.", variant: "destructive" });
   };
 
+  const handleCashOutPlayer = (playerId: string, cashOutAmount: number, departureStatus: 'left_early' | 'stayed_till_end') => {
+    setPlayers(prev => prev.map(p => {
+      if (p.id === playerId) {
+        const playerName = p.name;
+        toast({ title: "Player Cashed Out", description: `${playerName} has cashed out.` });
+        return {
+          ...p,
+          cashedOutAmount,
+          departureStatus,
+          cashOutTimestamp: new Date().toISOString(),
+        };
+      }
+      return p;
+    }));
+  };
+
   const handleResetGame = () => {
     setPlayers([]);
     toast({ title: "Game Reset", description: "All player data has been cleared.", variant: "destructive" });
   }
 
   if (!isClient) {
-    // Render a loading state or null during SSR/SSG to avoid hydration mismatches
-    // For example, a simple loading placeholder:
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 md:p-8 bg-gradient-to-br from-background to-secondary/30">
         <Landmark className="h-16 w-16 text-primary mb-4 animate-pulse" />
@@ -188,6 +204,7 @@ export default function PokerTrackerPage() {
                   onEditTransaction={handleEditTransaction}
                   onDeleteTransaction={handleDeleteTransaction}
                   onDeletePlayer={handleDeletePlayer}
+                  onCashOutPlayer={handleCashOutPlayer}
                 />
               ))}
             </div>

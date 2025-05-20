@@ -11,4 +11,7 @@ export interface Player {
   name: string;
   initialBalance: number;
   transactions: Transaction[];
+  cashedOutAmount?: number;
+  cashOutTimestamp?: string; // ISO string for date
+  departureStatus?: 'active' | 'left_early' | 'stayed_till_end';
 }
