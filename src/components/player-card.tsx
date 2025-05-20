@@ -113,9 +113,6 @@ export function PlayerCard({
     toast({ title: "Success", description: "Transaction updated." });
   };
 
-
-  const balanceColor = currentBalance < 0 ? 'text-red-500' : currentBalance > 0 ? 'text-emerald-600' : 'text-foreground';
-
   return (
     <Dialog open={!!editingTransaction} onOpenChange={(isOpen) => {
       if (!isOpen) {
@@ -270,12 +267,30 @@ export function PlayerCard({
         </CardContent>
         <CardFooter className="bg-secondary/30 p-4">
           <div className="w-full">
-            <p className={`text-lg font-bold ${balanceColor}`}>
-              Current Balance: {currentBalance.toFixed(2)} Rs.
-            </p>
-            {currentBalance < 0 && <p className="text-sm text-red-500">Owes {Math.abs(currentBalance).toFixed(2)} Rs. to the bank.</p>}
-            {currentBalance > 0 && <p className="text-sm text-emerald-600">Bank owes {currentBalance.toFixed(2)} Rs.</p>}
-            {currentBalance === 0 && <p className="text-sm text-foreground">Settled with the bank.</p>}
+            {currentBalance > 0 && (
+              <>
+                <p className="text-lg font-bold text-emerald-600">
+                  Net Win: {currentBalance.toFixed(2)} Rs.
+                </p>
+                <p className="text-sm text-emerald-600">Bank owes you this amount.</p>
+              </>
+            )}
+            {currentBalance < 0 && (
+              <>
+                <p className="text-lg font-bold text-red-500">
+                  Net Loss: {Math.abs(currentBalance).toFixed(2)} Rs.
+                </p>
+                <p className="text-sm text-red-500">You owe this amount to the bank.</p>
+              </>
+            )}
+            {currentBalance === 0 && (
+              <>
+                <p className="text-lg font-bold text-foreground">
+                  Net Result: 0.00 Rs.
+                </p>
+                <p className="text-sm text-foreground">Settled with the bank (Broke Even).</p>
+              </>
+            )}
           </div>
         </CardFooter>
 
@@ -320,5 +335,3 @@ export function PlayerCard({
     </Dialog>
   );
 }
-
-    
