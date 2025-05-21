@@ -7,7 +7,7 @@ import type { Player } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Trophy, TrendingDown, User, TrendingUp, BarChartBig } from 'lucide-react';
+import { Trophy, TrendingDown, Users, TrendingUp, BarChartBig } from 'lucide-react'; // Added Users here
 import { cn } from '@/lib/utils';
 
 interface SessionEndedStatsDisplayProps {
