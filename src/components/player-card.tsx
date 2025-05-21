@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Trash2, Edit3, PlusCircle, Save, XCircle, LogOut, Clock, UserCog, FilePlus, ShieldAlert, Ban } from 'lucide-react';
+import { Trash2, Edit3, PlusCircle, Save, XCircle, LogOut, Clock, UserCog, FilePlus, ShieldAlert, Ban, Banknote } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -155,11 +155,11 @@ export function PlayerCard({
   };
 
   return (
-    <Dialog open={!!editingTransaction || isCashOutDialogOpen} onOpenChange={(isOpen) => {
-      if (!isOpen) {
-        setEditingTransaction(null);
-        setIsCashOutDialogOpen(false);
-      }
+    <Dialog open={isCashOutDialogOpen || !!editingTransaction} onOpenChange={(isOpen) => {
+        if (!isOpen) {
+            setEditingTransaction(null);
+            setIsCashOutDialogOpen(false);
+        }
     }}>
       <Card className={cn(
         "w-full shadow-xl flex flex-col h-full border transition-all duration-300",
@@ -207,12 +207,19 @@ export function PlayerCard({
                   )}
               </CardDescription>
               {isCashedOut && player.cashedOutAmount !== undefined && (
-                <div className="mt-2 text-xs space-y-0.5 p-2 rounded-md bg-muted/50 border border-dashed border-muted-foreground/30">
-                  <p className="font-semibold text-primary flex items-center"><LogOut className="h-3 w-3 mr-1.5"/>Cashed Out: {player.cashedOutAmount} Rs.</p>
+                <div className="mt-2 text-xs space-y-1 p-2.5 rounded-md bg-muted/50 border border-dashed border-muted-foreground/30">
+                  <p className="font-medium text-primary flex items-center"><LogOut className="h-3.5 w-3.5 mr-1.5"/>Cashed Out: {player.cashedOutAmount} Rs.</p>
                   <p className="flex items-center text-muted-foreground">
-                    <Clock className="h-3 w-3 mr-1.5" /> 
+                    <Clock className="h-3.5 w-3.5 mr-1.5" /> 
                     {player.departureStatus === 'left_early' ? 'Left Early' : 'Stayed till End'}
                     {player.cashOutTimestamp && ` at ${format(new Date(player.cashOutTimestamp), 'p')}`}
+                  </p>
+                  <p className="flex items-center text-muted-foreground">
+                    <Banknote className="h-3.5 w-3.5 mr-1.5" />
+                    Bank Settlement: 
+                    {liveBalance < 0 ? ` Player paid bank ${Math.abs(liveBalance).toFixed(2)} Rs.` : 
+                     liveBalance > 0 ? ` Bank paid player ${liveBalance.toFixed(2)} Rs.` : 
+                     ' Even with bank.'}
                   </p>
                 </div>
               )}
@@ -252,7 +259,7 @@ export function PlayerCard({
               ) : player.transactions.length === 0 && isCashedOut ? (
               <p className="text-sm text-muted-foreground py-4 text-center">No transactions recorded before cash-out.</p>
               ) : (
-              <ScrollArea className="h-[160px] pr-3 -mr-3"> {/* Negative margin to hide scrollbar visually if not needed but keep functionality */}
+              <ScrollArea className="h-[160px] pr-3 -mr-3"> 
                   <ul className="space-y-2">
                   {player.transactions.map((tx) => (
                       <li key={tx.id} className="text-sm flex justify-between items-center p-2.5 rounded-md border border-border/30 bg-card hover:bg-muted/30 transition-colors group">
@@ -476,4 +483,3 @@ function Badge({ className, variant, ...props }: BadgeProps) {
     <div className={cn(baseClasses, variant ? variants[variant] : variants.default, className)} {...props} />
   );
 }
-
