@@ -5,44 +5,67 @@ import type * as React from 'react';
 import { useMemo } from 'react';
 import type { Player } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, TrendingUp, TrendingDown, Scale, Landmark, LogOut } from 'lucide-react';
+import { BarChart3, TrendingUp, TrendingDown, Scale, Landmark, LogOut as LogOutIcon, Trophy } from 'lucide-react'; // Renamed LogOut to LogOutIcon
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
 interface SummaryDisplayProps {
   players: Player[];
+  isSessionEnded: boolean;
 }
 
-export function SummaryDisplay({ players }: SummaryDisplayProps) {
-  const activePlayers = players.filter(p => p.departureStatus === 'active');
+export function SummaryDisplay({ players, isSessionEnded }: SummaryDisplayProps) {
   
-  const { totalOwedToBank, totalBankOwes, netBankPosition } = useMemo(() => {
-    let owedToBank = 0;
-    let bankOwes = 0;
+  const { 
+    totalOwedToBank, 
+    totalBankOwes, 
+    netBankPosition,
+    totalPlayerWinnings,
+    totalPlayerLosses,
+    finalBankNetPosition
+  } = useMemo(() => {
+    let activeOwedToBank = 0;
+    let activeBankOwes = 0;
+    
+    let sessionPlayerWinnings = 0;
+    let sessionPlayerLosses = 0;
+    let sessionNetPlayerResultsSum = 0;
 
-    // Calculate based on active players only for live summary
-    activePlayers.forEach(player => {
-      const playerBalance = player.initialBalance + player.transactions.reduce((sum, tx) => sum + tx.amount, 0);
-      if (playerBalance < 0) {
-        owedToBank += Math.abs(playerBalance);
-      } else if (playerBalance > 0) {
-        bankOwes += playerBalance;
+    players.forEach(player => {
+      const liveBalance = player.initialBalance + player.transactions.reduce((sum, tx) => sum + tx.amount, 0);
+      
+      if (player.departureStatus === 'active' && !isSessionEnded) {
+        if (liveBalance < 0) {
+          activeOwedToBank += Math.abs(liveBalance);
+        } else if (liveBalance > 0) {
+          activeBankOwes += liveBalance;
+        }
+      }
+
+      if (isSessionEnded && player.cashedOutAmount !== undefined) {
+        const finalNetResult = (player.cashedOutAmount ?? 0) + liveBalance;
+        sessionNetPlayerResultsSum += finalNetResult;
+        if (finalNetResult > 0) {
+          sessionPlayerWinnings += finalNetResult;
+        } else if (finalNetResult < 0) {
+          sessionPlayerLosses += Math.abs(finalNetResult);
+        }
       }
     });
 
     return {
-      totalOwedToBank: owedToBank,
-      totalBankOwes: bankOwes,
-      netBankPosition: bankOwes - owedToBank, // Positive if bank payout > bank income (bank is down)
+      totalOwedToBank: activeOwedToBank,
+      totalBankOwes: activeBankOwes,
+      netBankPosition: activeBankOwes - activeOwedToBank, // Positive if bank payout > bank income (bank is down to active players)
+      totalPlayerWinnings: sessionPlayerWinnings,
+      totalPlayerLosses: sessionPlayerLosses,
+      finalBankNetPosition: -sessionNetPlayerResultsSum, // Negative sum of player results is bank profit
     };
-  }, [activePlayers]);
+  }, [players, isSessionEnded]);
 
   const totalBuyIns = useMemo(() => {
     return players.reduce((sum, player) => {
-      // Initial balance is typically negative (taken from bank)
-      // Transactions: positive is money to bank (e.g. re-buy), negative is money from bank (e.g. food)
-      // A buy-in or re-buy is effectively money going to the bank, so positive transaction or initial negative balance.
-      let playerBuyIn = Math.abs(player.initialBalance); // Initial buy-in amount
+      let playerBuyIn = Math.abs(player.initialBalance); 
       player.transactions.forEach(tx => {
         if (tx.amount > 0 && (tx.description.toLowerCase().includes('buy-in') || tx.description.toLowerCase().includes('rebuy'))) {
           playerBuyIn += tx.amount;
@@ -53,6 +76,7 @@ export function SummaryDisplay({ players }: SummaryDisplayProps) {
   }, [players]);
 
   const totalCashedOutByPlayers = useMemo(() => {
+    // This should sum actual cashedOutAmount for all players, relevant for both live and ended session
     return players
       .filter(p => p.cashedOutAmount !== undefined)
       .reduce((sum, p) => sum + (p.cashedOutAmount ?? 0), 0);
@@ -65,42 +89,75 @@ export function SummaryDisplay({ players }: SummaryDisplayProps) {
         <div className="flex items-center gap-3">
           <BarChart3 className="h-7 w-7 text-primary" />
           <div>
-            <CardTitle className="text-2xl">Game Summary</CardTitle>
-            <CardDescription>Live overview of the current game finances for active players.</CardDescription>
+            <CardTitle className="text-2xl">{isSessionEnded ? "Final Game Stats" : "Game Summary"}</CardTitle>
+            <CardDescription>{isSessionEnded ? "Overall financial outcome of the concluded game." : "Live overview of the current game finances for active players."}</CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4 pt-2">
-        <SummaryItem
-          icon={<TrendingDown className="h-5 w-5 text-destructive" />}
-          label="Active Players Owe Bank:"
-          value={totalOwedToBank}
-          valueColor="text-destructive"
-          description="Total amount active players need to pay back to the bank from their stacks."
-        />
-        <SummaryItem
-          icon={<TrendingUp className="h-5 w-5 text-emerald-500" />}
-          label="Bank Owes Active Players:"
-          value={totalBankOwes}
-          valueColor="text-emerald-500"
-          description="Total amount bank needs to pay out to active players from their stacks."
-        />
-        
-        <Separator className="my-3 bg-border/40" />
-
-        <SummaryItem
-          icon={<Scale className="h-5 w-5 text-foreground/80" />}
-          label="Bank's Net Position (Active):"
-          value={netBankPosition}
-          valueColor={netBankPosition < 0 ? 'text-emerald-500' : netBankPosition > 0 ? 'text-destructive' : 'text-foreground'}
-          suffix={
-            netBankPosition < 0 ? " (Bank is Profiting)" :
-            netBankPosition > 0 ? " (Bank is Loosing)" :
-            " (Bank is Even)"
-          }
-          isBoldValue={true}
-          description="Overall financial status of the bank concerning active players. Negative means bank is up."
-        />
+        {!isSessionEnded ? (
+          <>
+            <SummaryItem
+              icon={<TrendingDown className="h-5 w-5 text-destructive" />}
+              label="Active Players Owe Bank:"
+              value={totalOwedToBank}
+              valueColor="text-destructive"
+              description="Total amount active players need to pay back to the bank from their stacks."
+            />
+            <SummaryItem
+              icon={<TrendingUp className="h-5 w-5 text-emerald-500" />}
+              label="Bank Owes Active Players:"
+              value={totalBankOwes}
+              valueColor="text-emerald-500"
+              description="Total amount bank needs to pay out to active players from their stacks."
+            />
+            <Separator className="my-3 bg-border/40" />
+            <SummaryItem
+              icon={<Scale className="h-5 w-5 text-foreground/80" />}
+              label="Bank's Net Position (Active):"
+              value={netBankPosition}
+              valueColor={netBankPosition < 0 ? 'text-emerald-500' : netBankPosition > 0 ? 'text-destructive' : 'text-foreground'}
+              suffix={
+                netBankPosition < 0 ? " (Bank is Profiting)" :
+                netBankPosition > 0 ? " (Bank is Loosing)" :
+                " (Bank is Even)"
+              }
+              isBoldValue={true}
+              description="Overall financial status of the bank concerning active players. Negative means bank is up."
+            />
+          </>
+        ) : (
+          <>
+            <SummaryItem
+              icon={<TrendingUp className="h-5 w-5 text-emerald-500" />}
+              label="Total Won by Players:"
+              value={totalPlayerWinnings}
+              valueColor="text-emerald-500"
+              description="Sum of profits for all winning players."
+            />
+            <SummaryItem
+              icon={<TrendingDown className="h-5 w-5 text-destructive" />}
+              label="Total Lost by Players:"
+              value={totalPlayerLosses}
+              valueColor="text-destructive"
+              description="Sum of losses for all losing players."
+            />
+             <Separator className="my-3 bg-border/40" />
+            <SummaryItem
+              icon={<Scale className="h-5 w-5 text-foreground/80" />}
+              label="Bank's Final Net Position:"
+              value={finalBankNetPosition} // Positive if bank profited, negative if bank lost
+              valueColor={finalBankNetPosition > 0 ? 'text-emerald-500' : finalBankNetPosition < 0 ? 'text-destructive' : 'text-foreground'}
+              suffix={
+                finalBankNetPosition > 0 ? " (Bank Profit)" :
+                finalBankNetPosition < 0 ? " (Bank Loss)" :
+                " (Bank Broke Even)"
+              }
+              isBoldValue={true}
+              description="Overall financial result for the bank from this game session."
+            />
+          </>
+        )}
         
         <Separator className="my-3 bg-border/40" />
 
@@ -112,14 +169,12 @@ export function SummaryDisplay({ players }: SummaryDisplayProps) {
           description="Total amount of money that has entered the game pot from all players."
         />
          <SummaryItem
-          icon={<LogOut className="h-5 w-5 text-accent/80" />}
-          label="Total Cashed Out by Players:"
+          icon={<LogOutIcon className="h-5 w-5 text-accent/80" />} // Used LogOutIcon
+          label="Total Chips Cashed Out:"
           value={totalCashedOutByPlayers}
           valueColor="text-accent"
-          description="Total amount of money taken off the table by cashed-out players."
+          description="Total amount of physical chips taken off the table by all players (including auto cash-outs)."
         />
-
-
       </CardContent>
     </Card>
   );
@@ -156,19 +211,24 @@ function SummaryItem({ icon, label, value, valueColor = 'text-foreground', suffi
   );
 }
 
-// Helper to determine prefix for value display, especially for net position
 function valuePrefix(value: number, suffix: string): string {
-  if (suffix.toLowerCase().includes("bank is profiting") && value !== 0) return '+'; // Bank profit means positive for bank
-  if (suffix.toLowerCase().includes("bank is loosing") && value !== 0) return '-'; // Bank loss means negative for bank
-  if (value < 0 && !suffix) return '-'; // Standard negative value if no specific suffix logic
-  if (value > 0 && !suffix) return '+'; // Standard positive value
-  return ''; // Default no prefix (for 0 or handled by suffix)
+  // For Bank's Net Position (Active) or Bank's Final Net Position
+  if (suffix.toLowerCase().includes("bank is profiting") && value !== 0) return '+'; // Bank profit is positive
+  if (suffix.toLowerCase().includes("bank is loosing") && value !== 0) return '-';   // Bank loss is negative
+  if (suffix.toLowerCase().includes("bank profit") && value !== 0) return '+';
+  if (suffix.toLowerCase().includes("bank loss") && value !== 0) return '-';
+  
+  // General cases, if no specific bank suffix applies
+  if (value > 0 && !suffix.toLowerCase().includes("loss") && !suffix.toLowerCase().includes("loosing") && !suffix.toLowerCase().includes("owe")) return '+';
+  if (value < 0 && !suffix.toLowerCase().includes("profit") && !suffix.toLowerCase().includes("profiting") && !suffix.toLowerCase().includes("owes")) return '-';
+  
+  return ''; // Default no prefix (for 0 or if logic dictates no sign for that specific suffix)
 }
 
-// Helper to get the actual suffix part if it exists
 function valueSuffix(value: number, suffix: string): string {
-  if (value === 0 && suffix.toLowerCase().includes("even")) return suffix;
-  if (value !== 0 && (suffix.toLowerCase().includes("profiting") || suffix.toLowerCase().includes("loosing"))) return suffix;
+  if (value === 0 && (suffix.toLowerCase().includes("even") || suffix.toLowerCase().includes("broke even")) ) return suffix;
+  if (value !== 0 && (suffix.toLowerCase().includes("profiting") || suffix.toLowerCase().includes("loosing") || suffix.toLowerCase().includes("profit") || suffix.toLowerCase().includes("loss"))) return suffix;
   return "";
 }
 
+    

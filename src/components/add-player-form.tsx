@@ -1,3 +1,4 @@
+
 "use client";
 
 import type * as React from 'react';
@@ -10,14 +11,15 @@ import { UserPlus } from 'lucide-react';
 
 interface AddPlayerFormProps {
   onAddPlayer: (name: string) => void;
+  isSessionEnded: boolean;
 }
 
-export function AddPlayerForm({ onAddPlayer }: AddPlayerFormProps) {
+export function AddPlayerForm({ onAddPlayer, isSessionEnded }: AddPlayerFormProps) {
   const [playerName, setPlayerName] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (playerName.trim()) {
+    if (playerName.trim() && !isSessionEnded) {
       onAddPlayer(playerName.trim());
       setPlayerName('');
     }
@@ -46,14 +48,18 @@ export function AddPlayerForm({ onAddPlayer }: AddPlayerFormProps) {
               placeholder="Enter player's name"
               required
               className="mt-1 text-base py-3 px-4 bg-input placeholder:text-muted-foreground/70"
+              disabled={isSessionEnded}
             />
           </div>
-          <Button type="submit" className="w-full text-base py-3">
+          <Button type="submit" className="w-full text-base py-3" disabled={isSessionEnded}>
             <UserPlus className="mr-2 h-5 w-5" />
             Add Player
           </Button>
         </form>
+         {isSessionEnded && <p className="text-sm text-destructive text-center mt-2">Cannot add players, session has ended.</p>}
       </CardContent>
     </Card>
   );
 }
+
+    
