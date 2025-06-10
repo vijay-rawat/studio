@@ -9,7 +9,7 @@ import { PlayersTable } from '@/components/players-table';
 import { SummaryDisplay } from '@/components/summary-display';
 import { SessionEndedStatsDisplay } from '@/components/session-ended-stats-display';
 import { FullLedgerView } from '@/components/full-ledger-view';
-import { ShieldCheck, Users, CalendarOff, Trash2, Gamepad2, BookOpen } from 'lucide-react';
+import { ShieldCheck, Users, CalendarOff, Trash2, Gamepad2, BookOpen, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -62,15 +62,26 @@ export default function PokerTrackerPage() {
       toast({ title: "Session Ended", description: "Cannot add players after the session has ended.", variant: "destructive" });
       return;
     }
+    const trimmedName = name.trim();
+    const existingPlayer = players.find(p => p.name.toLowerCase() === trimmedName.toLowerCase());
+    if (existingPlayer) {
+      toast({
+        title: "Duplicate Player Name",
+        description: `A player named "${trimmedName}" already exists. Please use a different name.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     const newPlayer: Player = {
       id: crypto.randomUUID(),
-      name,
+      name: trimmedName,
       initialBalance: DEFAULT_INITIAL_BALANCE,
       transactions: [],
       departureStatus: 'active',
     };
     setPlayers(prev => [...prev, newPlayer]);
-    toast({ title: "Player Added", description: `${name} has been added to the game.` });
+    toast({ title: "Player Added", description: `${trimmedName} has been added to the game.` });
   };
 
   const handleUpdatePlayerName = (playerId: string, newName: string) => {
