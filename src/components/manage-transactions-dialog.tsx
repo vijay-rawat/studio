@@ -2,7 +2,7 @@
 "use client";
 
 import type * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { Player, Transaction } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,11 +17,10 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogTxFooter, AlertDialogHeader as AlertDialogTxHeader, AlertDialogTitle as AlertDialogTxTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { PlusCircle, Edit3, Trash2, Coins, FilePlus } from 'lucide-react';
+import { PlusCircle, Edit3, Trash2, Coins, FilePlus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ManageTransactionsDialogProps {
@@ -33,6 +32,8 @@ interface ManageTransactionsDialogProps {
   onDeleteTransaction: (playerId: string, transactionId: string) => void;
   isActionsDisabled: boolean;
 }
+
+const TRANSACTIONS_PER_PAGE = 5;
 
 export function ManageTransactionsDialog({
   player,
@@ -51,16 +52,28 @@ export function ManageTransactionsDialog({
   const [editTxAmount, setEditTxAmount] = useState('');
   const [editTxDescription, setEditTxDescription] = useState('');
 
-  // Sort transactions by timestamp, newest first
-  const sortedTransactions = player.transactions.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Memoize sorted transactions to avoid re-sorting on every render unless player.transactions changes
+  const sortedTransactions = useMemo(() => {
+    return [...player.transactions].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }, [player.transactions]);
 
   useEffect(() => {
     if (!isOpen) {
       setNewTransactionAmount('');
       setNewTransactionDescription('');
-      setEditingTransaction(null); // Close edit sub-dialog if main dialog closes
+      setEditingTransaction(null);
+      setCurrentPage(1); // Reset to first page when dialog closes or player changes
+    } else {
+       setCurrentPage(1); // Reset to first page when dialog opens with a new player
     }
-  }, [isOpen]);
+  }, [isOpen, player.id]); // Added player.id to reset page if player context changes while open (less likely with current flow but good practice)
+
+  const indexOfLastTransaction = currentPage * TRANSACTIONS_PER_PAGE;
+  const indexOfFirstTransaction = indexOfLastTransaction - TRANSACTIONS_PER_PAGE;
+  const currentTransactions = sortedTransactions.slice(indexOfFirstTransaction, indexOfLastTransaction);
+  const totalPages = Math.ceil(sortedTransactions.length / TRANSACTIONS_PER_PAGE);
 
   const handleAddTransactionSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +91,8 @@ export function ManageTransactionsDialog({
     setNewTransactionAmount('');
     setNewTransactionDescription('');
     toast({ title: "Transaction Added", description: `Added '${newTransactionDescription.trim()}' for ${amount} Rs.` });
+    // Potentially go to the page where the new transaction appears (usually page 1 as it's newest)
+    setCurrentPage(1); 
   };
 
   const openEditModal = (tx: Transaction) => {
@@ -100,75 +115,104 @@ export function ManageTransactionsDialog({
       return;
     }
     onEditTransaction(player.id, editingTransaction.id, amount, editTxDescription.trim());
-    setEditingTransaction(null); // Close the sub-dialog
+    setEditingTransaction(null); 
     toast({ title: "Transaction Updated", description: "Transaction details saved." });
+  };
+  
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md md:max-w-lg max-h-[85vh] flex flex-col">
+      <DialogContent className="sm:max-w-md md:max-w-lg max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Coins className="h-5 w-5 text-primary" />
             Manage Transactions for {player.name}
           </DialogTitle>
           <DialogDescription>
-            View, add, edit, or delete transactions for this player.
+            View, add, edit, or delete transactions.
             {isActionsDisabled && " (Actions disabled - player/session finalized)"}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="py-4 space-y-6 overflow-y-auto flex-grow pr-1"> {/* Added overflow-y-auto and flex-grow */}
-          <div>
-            <h4 className="font-semibold mb-2 text-base text-foreground/90">Transaction History:</h4>
+        <div className="flex-grow flex flex-col py-4 space-y-4 overflow-y-auto pr-2"> {/* Main content area scrolls if needed */}
+          
+          {/* Transaction History Section */}
+          <div className="space-y-3">
+            <h4 className="font-semibold text-base text-foreground/90">Transaction History:</h4>
             {sortedTransactions.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4 text-center">No transactions recorded.</p>
+            ) : currentTransactions.length === 0 && sortedTransactions.length > 0 ? (
+               <p className="text-sm text-muted-foreground py-4 text-center">No transactions on this page.</p>
             ) : (
-              <ScrollArea className="h-[250px] pr-3 -mr-3 border rounded-md p-2"> {/* Increased height */}
-                <ul className="space-y-2">
-                  {sortedTransactions.map((tx) => (
-                    <li key={tx.id} className="text-sm flex justify-between items-center p-2.5 rounded-md border-border/30 bg-card hover:bg-muted/30 transition-colors group">
-                      <div>
-                        <span className="font-medium text-foreground/90">{tx.description}</span>
-                        <p className={`text-xs ${tx.amount < 0 ? 'text-destructive' : 'text-emerald-500'}`}>{tx.amount > 0 ? '+' : ''}{tx.amount.toFixed(2)} Rs.</p>
-                        <p className="text-xs text-muted-foreground/70 pt-0.5">{format(new Date(tx.timestamp), "MMM d, p")}</p>
+              <ul className="space-y-2 min-h-[100px]"> {/* Min height to prevent layout jump */}
+                {currentTransactions.map((tx) => (
+                  <li key={tx.id} className="text-sm flex justify-between items-center p-2.5 rounded-md border bg-card hover:bg-muted/30 transition-colors group">
+                    <div>
+                      <span className="font-medium text-foreground/90">{tx.description}</span>
+                      <p className={`text-xs ${tx.amount < 0 ? 'text-destructive' : 'text-emerald-500'}`}>{tx.amount > 0 ? '+' : ''}{tx.amount.toFixed(2)} Rs.</p>
+                      <p className="text-xs text-muted-foreground/70 pt-0.5">{format(new Date(tx.timestamp), "MMM d, p")}</p>
+                    </div>
+                    {!isActionsDisabled && (
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button variant="ghost" size="icon" onClick={() => openEditModal(tx)} aria-label="Edit transaction" className="h-7 w-7 text-muted-foreground hover:text-primary">
+                          <Edit3 className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive h-7 w-7" aria-label="Delete transaction">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogTxHeader>
+                              <AlertDialogTxTitle>Delete Transaction?</AlertDialogTxTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete transaction: {tx.description} ({tx.amount.toFixed(2)} Rs.)? This cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogTxHeader>
+                            <AlertDialogTxFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => {
+                                onDeleteTransaction(player.id, tx.id);
+                                // Adjust current page if the last item on a page is deleted
+                                if (currentTransactions.length === 1 && currentPage > 1) {
+                                  setCurrentPage(currentPage - 1);
+                                }
+                              }} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">Delete</AlertDialogAction>
+                            </AlertDialogTxFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
-                      {!isActionsDisabled && (
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button variant="ghost" size="icon" onClick={() => openEditModal(tx)} aria-label="Edit transaction" className="h-7 w-7 text-muted-foreground hover:text-primary">
-                            <Edit3 className="h-4 w-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive h-7 w-7" aria-label="Delete transaction">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogTxHeader>
-                                <AlertDialogTxTitle>Delete Transaction?</AlertDialogTxTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete transaction: {tx.description} ({tx.amount.toFixed(2)} Rs.)? This cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogTxHeader>
-                              <AlertDialogTxFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => onDeleteTransaction(player.id, tx.id)} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">Delete</AlertDialogAction>
-                              </AlertDialogTxFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </ScrollArea>
+                    )}
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
 
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center space-x-3 pt-2">
+              <Button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} variant="outline" size="sm">
+                <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} variant="outline" size="sm">
+                Next <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          )}
+
           {!isActionsDisabled && (
             <>
-              <Separator className="my-4 bg-border/40" />
+              <Separator className="my-2 bg-border/40" />
               <form onSubmit={handleAddTransactionSubmit} className="space-y-3">
                 <h5 className="font-semibold text-sm text-foreground/90 flex items-center">
                   <FilePlus className="h-4 w-4 mr-2 text-primary" />
@@ -213,7 +257,7 @@ export function ManageTransactionsDialog({
           )}
         </div>
 
-        <DialogFooter className="mt-auto pt-4"> {/* Added mt-auto to push footer down */}
+        <DialogFooter className="mt-auto pt-4 border-t border-border/30">
           <DialogClose asChild>
             <Button type="button" variant="outline" onClick={onClose}>Close</Button>
           </DialogClose>
@@ -223,7 +267,7 @@ export function ManageTransactionsDialog({
       {/* Edit Transaction Sub-Dialog */}
       {editingTransaction && !isActionsDisabled && (
         <Dialog open={!!editingTransaction} onOpenChange={(open) => !open && setEditingTransaction(null)}>
-          <DialogContent className="sm:max-w-xs"> {/* Smaller dialog for editing a single transaction */}
+          <DialogContent className="sm:max-w-xs"> 
             <DialogHeader>
               <DialogTitle className="flex items-center"><Edit3 className="mr-2 h-5 w-5 text-primary"/>Edit Transaction</DialogTitle>
             </DialogHeader>
@@ -264,3 +308,5 @@ export function ManageTransactionsDialog({
     </Dialog>
   );
 }
+
+    
