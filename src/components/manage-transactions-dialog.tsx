@@ -54,21 +54,21 @@ export function ManageTransactionsDialog({
 
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Memoize sorted transactions to avoid re-sorting on every render unless player.transactions changes
   const sortedTransactions = useMemo(() => {
+    if (!player || !player.transactions) return [];
     return [...player.transactions].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }, [player.transactions]);
+  }, [player]);
 
   useEffect(() => {
     if (!isOpen) {
       setNewTransactionAmount('');
       setNewTransactionDescription('');
       setEditingTransaction(null);
-      setCurrentPage(1); // Reset to first page when dialog closes or player changes
+      setCurrentPage(1);
     } else {
-       setCurrentPage(1); // Reset to first page when dialog opens with a new player
+       setCurrentPage(1);
     }
-  }, [isOpen, player.id]); // Added player.id to reset page if player context changes while open (less likely with current flow but good practice)
+  }, [isOpen, player?.id]); 
 
   const indexOfLastTransaction = currentPage * TRANSACTIONS_PER_PAGE;
   const indexOfFirstTransaction = indexOfLastTransaction - TRANSACTIONS_PER_PAGE;
@@ -91,8 +91,14 @@ export function ManageTransactionsDialog({
     setNewTransactionAmount('');
     setNewTransactionDescription('');
     toast({ title: "Transaction Added", description: `Added '${newTransactionDescription.trim()}' for ${amount} Rs.` });
-    // Potentially go to the page where the new transaction appears (usually page 1 as it's newest)
     setCurrentPage(1); 
+  };
+
+  const handleQuickRebuy = () => {
+    if (isActionsDisabled) return;
+    onAddTransaction(player.id, -400, "Re-buy (Player takes 400)");
+    toast({ title: "Re-buy Added", description: `Added Re-buy for ${player.name} (Player takes 400 Rs).` });
+    setCurrentPage(1); // Go to first page to see new transaction
   };
 
   const openEditModal = (tx: Transaction) => {
@@ -125,6 +131,8 @@ export function ManageTransactionsDialog({
     }
   };
 
+  if (!player) return null; // Should not happen if isOpen is true and player is managed correctly by parent
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md md:max-w-lg max-h-[90vh] flex flex-col">
@@ -139,9 +147,8 @@ export function ManageTransactionsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-grow flex flex-col py-4 space-y-4 overflow-y-auto pr-2"> {/* Main content area scrolls if needed */}
+        <div className="flex-grow flex flex-col py-4 space-y-4 overflow-y-auto pr-2">
           
-          {/* Transaction History Section */}
           <div className="space-y-3">
             <h4 className="font-semibold text-base text-foreground/90">Transaction History:</h4>
             {sortedTransactions.length === 0 ? (
@@ -149,7 +156,7 @@ export function ManageTransactionsDialog({
             ) : currentTransactions.length === 0 && sortedTransactions.length > 0 ? (
                <p className="text-sm text-muted-foreground py-4 text-center">No transactions on this page.</p>
             ) : (
-              <ul className="space-y-2 min-h-[100px]"> {/* Min height to prevent layout jump */}
+              <ul className="space-y-2 min-h-[100px]"> 
                 {currentTransactions.map((tx) => (
                   <li key={tx.id} className="text-sm flex justify-between items-center p-2.5 rounded-md border bg-card hover:bg-muted/30 transition-colors group">
                     <div>
@@ -179,7 +186,6 @@ export function ManageTransactionsDialog({
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction onClick={() => {
                                 onDeleteTransaction(player.id, tx.id);
-                                // Adjust current page if the last item on a page is deleted
                                 if (currentTransactions.length === 1 && currentPage > 1) {
                                   setCurrentPage(currentPage - 1);
                                 }
@@ -195,7 +201,6 @@ export function ManageTransactionsDialog({
             )}
           </div>
 
-          {/* Pagination Controls */}
           {totalPages > 1 && (
             <div className="flex justify-center items-center space-x-3 pt-2">
               <Button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} variant="outline" size="sm">
@@ -213,10 +218,19 @@ export function ManageTransactionsDialog({
           {!isActionsDisabled && (
             <>
               <Separator className="my-2 bg-border/40" />
-              <form onSubmit={handleAddTransactionSubmit} className="space-y-3">
+               <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={handleQuickRebuy}
+                disabled={isActionsDisabled}
+              >
+                <Coins className="mr-2 h-4 w-4" /> Quick Re-buy (Player takes 400)
+              </Button>
+              <form onSubmit={handleAddTransactionSubmit} className="space-y-3 pt-2">
                 <h5 className="font-semibold text-sm text-foreground/90 flex items-center">
                   <FilePlus className="h-4 w-4 mr-2 text-primary" />
-                  Add New Transaction
+                  Add Custom Transaction
                 </h5>
                 <div>
                   <Label htmlFor={`mng-tx-desc-${player.id}`} className="text-xs font-medium text-muted-foreground">Description</Label>
@@ -225,7 +239,7 @@ export function ManageTransactionsDialog({
                     type="text"
                     value={newTransactionDescription}
                     onChange={(e) => setNewTransactionDescription(e.target.value)}
-                    placeholder="e.g., Re-buy, Drinks"
+                    placeholder="e.g., Chips purchase, Drinks"
                     required
                     className="mt-1 h-9 bg-input text-sm"
                     disabled={isActionsDisabled}
@@ -264,7 +278,6 @@ export function ManageTransactionsDialog({
         </DialogFooter>
       </DialogContent>
 
-      {/* Edit Transaction Sub-Dialog */}
       {editingTransaction && !isActionsDisabled && (
         <Dialog open={!!editingTransaction} onOpenChange={(open) => !open && setEditingTransaction(null)}>
           <DialogContent className="sm:max-w-xs"> 
@@ -308,5 +321,3 @@ export function ManageTransactionsDialog({
     </Dialog>
   );
 }
-
-    
