@@ -6,7 +6,7 @@ import { useMemo } from 'react';
 import type { Player } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Trophy, TrendingDown, Users, BarChartBig, TrendingUp } from 'lucide-react';
+import { Trophy, TrendingDown, Users, BarChartBig, TrendingUp, ListChecks } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   BarChart,
@@ -63,7 +63,6 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
     amount: {
       label: "Net Result (Rs.)",
     },
-    // Add individual player colors if needed, or rely on Cell fill
   };
 
 
@@ -125,41 +124,73 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
           </div>
         )}
         
-        <div>
-          <div className="flex items-center gap-2 mb-4">
+        <div className="space-y-6">
+          <div className="flex items-center gap-2">
             <Users className="h-6 w-6 text-muted-foreground" />
             <h3 className="text-xl font-semibold text-foreground/90">All Player Results</h3>
           </div>
-          <Separator className="mb-6 bg-border/40"/>
-          {chartData.length > 0 ? (
-            <ChartContainer config={chartConfig} className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  layout="vertical"
-                  data={chartData}
-                  margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
-                >
-                  <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(value) => `${value} Rs.`}/>
-                  <YAxis dataKey="name" type="category" stroke="hsl(var(--muted-foreground))" fontSize={12} width={80} tick={{ dy: 2 }} />
-                  <Tooltip
-                    cursor={{ fill: 'hsl(var(--muted)/0.3)' }}
-                    content={<ChartTooltipContent />}
-                  />
-                  <Bar dataKey="amount" radius={[4, 4, 0, 0]} barSize={20}>
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.amount >= 0 ? 'hsl(var(--primary))' : 'hsl(var(--destructive))'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+          <Separator className="mb-4 bg-border/40"/>
+
+          {playerStats.length > 0 ? (
+            <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-1">
+                    <ListChecks className="h-5 w-5 text-muted-foreground" />
+                    <h4 className="text-lg font-medium text-foreground/80">Detailed Results:</h4>
+                </div>
+                <ul className="space-y-1.5 pl-2">
+                {playerStats.map(player => (
+                    <li key={player.id} className="flex justify-between items-center text-sm py-1 px-2 rounded-md hover:bg-muted/30">
+                    <span>{player.name}</span>
+                    <span className={cn(
+                        "font-semibold",
+                        player.finalNetResult > 0 && "text-emerald-500",
+                        player.finalNetResult < 0 && "text-destructive",
+                        player.finalNetResult === 0 && "text-muted-foreground"
+                    )}>
+                        {player.finalNetResult > 0 ? '+' : ''}{player.finalNetResult.toFixed(2)} Rs.
+                    </span>
+                    </li>
+                ))}
+                </ul>
+            </div>
           ) : (
-            <p className="text-muted-foreground text-center py-4">No detailed player stats to display in chart.</p>
+            <p className="text-muted-foreground text-center py-4">No detailed player stats to display.</p>
           )}
+
+          {chartData.length > 0 && (
+            <div className="space-y-3 pt-4">
+                 <div className="flex items-center gap-2 mb-1">
+                    <BarChartBig className="h-5 w-5 text-muted-foreground" />
+                    <h4 className="text-lg font-medium text-foreground/80">Visual Summary:</h4>
+                </div>
+                <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                    layout="vertical"
+                    data={chartData}
+                    margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
+                    >
+                    <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(value) => `${value} Rs.`}/>
+                    <YAxis dataKey="name" type="category" stroke="hsl(var(--muted-foreground))" fontSize={12} width={80} tick={{ dy: 2 }} />
+                    <Tooltip
+                        cursor={{ fill: 'hsl(var(--muted)/0.3)' }}
+                        content={<ChartTooltipContent />}
+                    />
+                    <Bar dataKey="amount" radius={[4, 4, 0, 0]} barSize={20}>
+                        {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.amount >= 0 ? 'hsl(var(--primary))' : 'hsl(var(--destructive))'} />
+                        ))}
+                    </Bar>
+                    </BarChart>
+                </ResponsiveContainer>
+                </ChartContainer>
+            </div>
+          )}
+           {playerStats.length > 0 && chartData.length === 0 && (
+            <p className="text-muted-foreground text-center py-4">No data available for chart visualization.</p>
+           )}
         </div>
       </CardContent>
     </Card>
   );
 }
-
-    
