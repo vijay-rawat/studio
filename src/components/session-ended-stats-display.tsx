@@ -4,18 +4,18 @@
 import type * as React from 'react';
 import { useMemo } from 'react';
 import type { Player } from '@/types';
+import type { ChartConfig } from "@/components/ui/chart";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Trophy, TrendingDown, Users, BarChartBig, TrendingUp, ListChecks } from 'lucide-react';
+import { Trophy, TrendingDown, Users, PieChart as PieChartIcon, ListChecks } from 'lucide-react'; // Changed BarChartBig to PieChartIcon
 import { cn } from '@/lib/utils';
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
+  PieChart,
+  Pie,
+  Cell,
   Tooltip,
   ResponsiveContainer,
-  Cell,
+  Legend,
 } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
@@ -33,7 +33,7 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
     return players.map(p => {
       const liveBalance = p.initialBalance + p.transactions.reduce((sum, tx) => sum + tx.amount, 0);
       const finalNetResult = (p.cashedOutAmount ?? 0) + liveBalance;
-      return { ...p, name: p.name, finalNetResult }; // Ensure name is explicitly carried for chart
+      return { ...p, name: p.name, finalNetResult };
     }).sort((a, b) => b.finalNetResult - a.finalNetResult);
   }, [players]);
 
@@ -46,31 +46,38 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
   const topLoser = useMemo(() => {
     if (playerStats.length === 0) return null;
     const losers = playerStats.filter(p => p.finalNetResult < 0);
-    // Sort losers by the most negative amount
     const sortedLosers = losers.sort((a,b) => a.finalNetResult - b.finalNetResult);
     return sortedLosers.length > 0 ? sortedLosers[0] : null;
   }, [playerStats]);
 
-  const chartData = useMemo(() => {
-    // Sort for chart display, typically largest positive to largest negative
-    return [...playerStats].sort((a, b) => b.finalNetResult - a.finalNetResult).map(p => ({
-      name: p.name,
-      amount: p.finalNetResult,
-    }));
+  const pieChartData = useMemo(() => {
+    return playerStats
+      .filter(p => p.finalNetResult !== 0) // Exclude players who broke even from pie chart
+      .map(p => ({
+        name: p.name,
+        value: Math.abs(p.finalNetResult), // Use absolute value for slice size
+        originalResult: p.finalNetResult, // Store original for tooltip and color
+        fill: p.finalNetResult > 0 ? 'hsl(var(--primary))' : 'hsl(var(--destructive))',
+      }));
   }, [playerStats]);
   
-  const chartConfig = {
-    amount: {
-      label: "Net Result (Rs.)",
-    },
-  };
+  const chartConfig = useMemo(() => {
+    const config: ChartConfig = {};
+    playerStats.forEach(player => {
+      config[player.name] = {
+        label: player.name,
+        color: player.finalNetResult > 0 ? 'hsl(var(--primary))' : 'hsl(var(--destructive))',
+      };
+    });
+    return config;
+  }, [playerStats]);
 
 
   if (players.length === 0) {
     return (
       <Card className="w-full shadow-xl border-border/50 mt-8">
         <CardHeader>
-          <CardTitle className="text-2xl flex items-center"><BarChartBig className="mr-3 h-7 w-7 text-primary" />Session Ended - No Player Data</CardTitle>
+          <CardTitle className="text-2xl flex items-center"><PieChartIcon className="mr-3 h-7 w-7 text-primary" />Session Ended - No Player Data</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">No players participated or no data was recorded for this session.</p>
@@ -79,11 +86,26 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
     );
   }
 
+  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }: any) => {
+    const RADIAN = Math.PI / 180;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+    if (percent * 100 < 5) return null; // Don't render label if slice is too small
+
+    return (
+      <text x={x} y={y} fill="hsl(var(--primary-foreground))" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs font-medium">
+        {`${name} (${(percent * 100).toFixed(0)}%)`}
+      </text>
+    );
+  };
+
   return (
     <Card className="w-full shadow-xl border-border/50 mt-8">
       <CardHeader>
         <div className="flex items-center gap-3">
-            <BarChartBig className="h-8 w-8 text-primary" />
+            <PieChartIcon className="h-8 w-8 text-primary" />
             <div>
                 <CardTitle className="text-3xl">Session Ended - Final Stats</CardTitle>
                 <CardDescription>Summary of player performance for the concluded game.</CardDescription>
@@ -157,40 +179,70 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
             <p className="text-muted-foreground text-center py-4">No detailed player stats to display.</p>
           )}
 
-          {chartData.length > 0 && (
+          {pieChartData.length > 0 ? (
             <div className="space-y-3 pt-4">
                  <div className="flex items-center gap-2 mb-1">
-                    <BarChartBig className="h-5 w-5 text-muted-foreground" />
-                    <h4 className="text-lg font-medium text-foreground/80">Visual Summary:</h4>
+                    <PieChartIcon className="h-5 w-5 text-muted-foreground" />
+                    <h4 className="text-lg font-medium text-foreground/80">Visual Summary (Magnitude of Results):</h4>
                 </div>
-                <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                <ChartContainer config={chartConfig} className="h-[350px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                    layout="vertical"
-                    data={chartData}
-                    margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
-                    >
-                    <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(value) => `${value} Rs.`}/>
-                    <YAxis dataKey="name" type="category" stroke="hsl(var(--muted-foreground))" fontSize={12} width={80} tick={{ dy: 2 }} />
+                    <PieChart>
                     <Tooltip
                         cursor={{ fill: 'hsl(var(--muted)/0.3)' }}
-                        content={<ChartTooltipContent />}
+                        content={
+                            <ChartTooltipContent
+                              formatter={(value, name, props) => {
+                                const originalResult = props.payload.originalResult;
+                                return (
+                                  <div className="flex flex-col">
+                                    <span>{name}</span>
+                                    <span className={cn(
+                                      "font-bold",
+                                      originalResult > 0 && "text-emerald-500",
+                                      originalResult < 0 && "text-destructive"
+                                    )}>
+                                      {originalResult > 0 ? '+' : ''}{originalResult.toFixed(2)} Rs.
+                                    </span>
+                                  </div>
+                                )
+                              }}
+                              hideLabel // We use formatter, so hide default label
+                            />
+                        }
                     />
-                    <Bar dataKey="amount" radius={[4, 4, 0, 0]} barSize={20}>
-                        {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.amount >= 0 ? 'hsl(var(--primary))' : 'hsl(var(--destructive))'} />
+                    <Pie
+                        data={pieChartData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={120}
+                        labelLine={false}
+                        label={renderCustomizedLabel}
+                    >
+                        {pieChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />
                         ))}
-                    </Bar>
-                    </BarChart>
+                    </Pie>
+                    <Legend 
+                        wrapperStyle={{paddingTop: "20px"}}
+                        formatter={(value, entry) => {
+                            const { color } = entry;
+                            return <span style={{ color }}>{value}</span>;
+                          }}
+                    />
+                    </PieChart>
                 </ResponsiveContainer>
                 </ChartContainer>
             </div>
-          )}
-           {playerStats.length > 0 && chartData.length === 0 && (
-            <p className="text-muted-foreground text-center py-4">No data available for chart visualization.</p>
+          ) : (
+            playerStats.length > 0 && <p className="text-muted-foreground text-center py-4">No significant wins or losses to visualize in a chart.</p>
            )}
         </div>
       </CardContent>
     </Card>
   );
 }
+
+    
