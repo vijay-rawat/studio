@@ -51,11 +51,14 @@ export function ManageTransactionsDialog({
   const [editTxAmount, setEditTxAmount] = useState('');
   const [editTxDescription, setEditTxDescription] = useState('');
 
+  // Sort transactions by timestamp, newest first
+  const sortedTransactions = player.transactions.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
   useEffect(() => {
     if (!isOpen) {
       setNewTransactionAmount('');
       setNewTransactionDescription('');
-      setEditingTransaction(null);
+      setEditingTransaction(null); // Close edit sub-dialog if main dialog closes
     }
   }, [isOpen]);
 
@@ -97,7 +100,7 @@ export function ManageTransactionsDialog({
       return;
     }
     onEditTransaction(player.id, editingTransaction.id, amount, editTxDescription.trim());
-    setEditingTransaction(null);
+    setEditingTransaction(null); // Close the sub-dialog
     toast({ title: "Transaction Updated", description: "Transaction details saved." });
   };
 
@@ -111,18 +114,19 @@ export function ManageTransactionsDialog({
           </DialogTitle>
           <DialogDescription>
             View, add, edit, or delete transactions for this player.
+            {isActionsDisabled && " (Actions disabled - player/session finalized)"}
           </DialogDescription>
         </DialogHeader>
 
         <div className="py-4 space-y-6">
           <div>
             <h4 className="font-semibold mb-2 text-base text-foreground/90">Transaction History:</h4>
-            {player.transactions.length === 0 ? (
+            {sortedTransactions.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4 text-center">No transactions recorded.</p>
             ) : (
               <ScrollArea className="h-[200px] pr-3 -mr-3 border rounded-md p-2">
                 <ul className="space-y-2">
-                  {player.transactions.map((tx) => (
+                  {sortedTransactions.map((tx) => (
                     <li key={tx.id} className="text-sm flex justify-between items-center p-2.5 rounded-md border-border/30 bg-card hover:bg-muted/30 transition-colors group">
                       <div>
                         <span className="font-medium text-foreground/90">{tx.description}</span>
@@ -180,6 +184,7 @@ export function ManageTransactionsDialog({
                     placeholder="e.g., Re-buy, Drinks"
                     required
                     className="mt-1 h-9 bg-input text-sm"
+                    disabled={isActionsDisabled}
                   />
                 </div>
                 <div>
@@ -193,10 +198,11 @@ export function ManageTransactionsDialog({
                     placeholder="e.g., 50 or -100"
                     required
                     className="mt-1 h-9 bg-input text-sm"
+                    disabled={isActionsDisabled}
                   />
                    <p className="text-xs text-muted-foreground/70 mt-1">Positive if player gives to bank, negative if player takes from bank.</p>
                 </div>
-                <Button type="submit" size="sm" className="w-full">
+                <Button type="submit" size="sm" className="w-full" disabled={isActionsDisabled}>
                   <PlusCircle className="mr-2 h-4 w-4" /> Add Transaction
                 </Button>
               </form>
@@ -231,6 +237,7 @@ export function ManageTransactionsDialog({
                   onChange={(e) => setEditTxDescription(e.target.value)}
                   required
                   className="mt-1 bg-input"
+                  disabled={isActionsDisabled}
                 />
               </div>
               <div>
@@ -243,11 +250,12 @@ export function ManageTransactionsDialog({
                   onChange={(e) => setEditTxAmount(e.target.value)}
                   required
                   className="mt-1 bg-input"
+                  disabled={isActionsDisabled}
                 />
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setEditingTransaction(null)}>Cancel</Button>
-                <Button type="submit">Save Changes</Button>
+                <Button type="submit" disabled={isActionsDisabled}>Save Changes</Button>
               </DialogFooter>
             </form>
           </DialogContent>
