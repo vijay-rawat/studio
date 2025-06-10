@@ -4,48 +4,48 @@
 
 @layer base {
   :root {
-    /* Dark Chrome & Cyber Teal Theme */
-    --background: 220 6% 12%; /* Very Dark Grey - Dark Chrome */
-    --foreground: 220 10% 88%; /* Light Grey */
+    /* Polished Steel & Cobalt Theme */
+    --background: 220 15% 18%; /* Dark Cool Slate */
+    --foreground: 210 10% 85%; /* Light Cool Gray */
 
-    --card: 220 6% 16%;
-    --card-foreground: 220 10% 88%;
+    --card: 220 15% 22%;
+    --card-foreground: 210 10% 85%;
 
-    --popover: 220 6% 14%;
-    --popover-foreground: 220 10% 88%;
+    --popover: 220 15% 20%;
+    --popover-foreground: 210 10% 85%;
 
-    --primary: 190 70% 50%; /* Vibrant Cyber Teal */
-    --primary-foreground: 220 6% 95%; /* Very light, almost white */
+    --primary: 215 70% 55%; /* Bright Cobalt Blue */
+    --primary-foreground: 210 10% 95%; /* Very Light Gray/White */
 
-    --secondary: 220 5% 25%;
-    --secondary-foreground: 220 8% 78%;
+    --secondary: 220 12% 30%;
+    --secondary-foreground: 210 8% 75%;
 
-    --muted: 220 5% 20%;
-    --muted-foreground: 220 8% 60%;
+    --muted: 220 12% 25%;
+    --muted-foreground: 210 8% 55%;
 
-    --accent: 210 10% 70%; /* Neutral Light Grey */
-    --accent-foreground: 220 6% 10%; /* Dark text on this light accent */
+    --accent: 200 80% 70%; /* Bright, Light Cyan/Sky Blue */
+    --accent-foreground: 220 15% 10%; /* Dark text for this light accent */
 
     --destructive: 0 62.8% 50.6%; /* Saturated Red (Kept Standard) */
     --destructive-foreground: 0 0% 98%;
 
-    --border: 220 6% 22%;
-    --input: 220 6% 19%;
-    --input-foreground: 220 10% 88%;
+    --border: 220 15% 28%;
+    --input: 220 15% 24%;
+    --input-foreground: 210 10% 85%;
 
-    --ring: 190 70% 55%; /* Ring color, slightly brighter primary */
+    --ring: 215 70% 60%; /* Ring color, slightly brighter primary */
 
     --radius: 0.5rem;
 
-    /* Sidebar colors (Dark Chrome & Cyber Teal) */
-    --sidebar-background: 220 6% 10%; /* Slightly darker than main bg */
-    --sidebar-foreground: 220 10% 88%; 
-    --sidebar-primary: 190 70% 50%; /* Main primary */
-    --sidebar-primary-foreground: 220 6% 95%; /* Main primary-foreground */
-    --sidebar-accent: 210 10% 70%; /* Main accent */
-    --sidebar-accent-foreground: 220 6% 10%; /* Main accent-foreground */
-    --sidebar-border: 220 6% 20%; /* Slightly darker than main border */
-    --sidebar-ring: 190 70% 55%; /* Main ring */
+    /* Sidebar colors (Polished Steel & Cobalt) */
+    --sidebar-background: 220 15% 16%; /* Slightly darker than main bg */
+    --sidebar-foreground: 210 10% 85%;
+    --sidebar-primary: 215 70% 55%; /* Main primary */
+    --sidebar-primary-foreground: 210 10% 95%; /* Main primary-foreground */
+    --sidebar-accent: 200 80% 70%; /* Main accent */
+    --sidebar-accent-foreground: 220 15% 10%; /* Main accent-foreground */
+    --sidebar-border: 220 15% 26%; /* Slightly darker than main border */
+    --sidebar-ring: 215 70% 60%; /* Main ring */
   }
 
   .light { /* Optional Light theme, if ever needed - kept as is from previous state */
@@ -58,7 +58,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
 
-    --primary: 190 65% 45%; /* Adjusted primary for light mode */
+    --primary: 215 65% 45%; /* Adjusted primary for light mode */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 92%; /* Light gray */
@@ -67,7 +67,7 @@
     --muted: 0 0% 95%;
     --muted-foreground: 0 0% 45.1%;
 
-    --accent: 210 10% 60%; /* Adjusted accent for light mode */
+    --accent: 200 70% 60%; /* Adjusted accent for light mode */
     --accent-foreground: 240 10% 10%;
 
     --destructive: 0 84.2% 60.2%;
@@ -76,18 +76,18 @@
     --border: 0 0% 90%;
     --input: 0 0% 94%;
     --input-foreground: 240 10% 3.9%;
-    --ring: 190 65% 50%;
+    --ring: 215 65% 50%;
     
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 97%;
     --sidebar-foreground: 240 10% 20%;
-    --sidebar-primary: 190 65% 45%;
+    --sidebar-primary: 215 65% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 10% 60%;
+    --sidebar-accent: 200 70% 60%;
     --sidebar-accent-foreground: 240 10% 10%;
     --sidebar-border: 0 0% 88%;
-    --sidebar-ring: 190 65% 50%;
+    --sidebar-ring: 215 65% 50%;
   }
 }
 
