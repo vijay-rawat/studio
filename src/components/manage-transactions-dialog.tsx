@@ -20,17 +20,23 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { PlusCircle, Edit3, Trash2, Coins, FilePlus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { PlusCircle, Edit3, Trash2, Coins, FilePlus, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface ManageTransactionsDialogProps {
   player: Player;
   isOpen: boolean;
   onClose: () => void;
-  onAddTransaction: (playerId: string, amount: number, description: string) => void;
+  onAddTransaction: (playerId: string, amount: number, description: string) => void; // For bank transactions
   onEditTransaction: (playerId: string, transactionId: string, newAmount: number, newDescription: string) => void;
   onDeleteTransaction: (playerId: string, transactionId: string) => void;
-  isActionsDisabled: boolean;
+  isActionsDisabled: boolean; // True if player cashed out or session ended
 }
 
 const TRANSACTIONS_PER_PAGE = 5;
@@ -87,22 +93,25 @@ export function ManageTransactionsDialog({
       toast({ title: "Error", description: "Transaction description cannot be empty.", variant: "destructive" });
       return;
     }
-    onAddTransaction(player.id, amount, newTransactionDescription.trim());
+    onAddTransaction(player.id, amount, newTransactionDescription.trim()); // This is for BANK transactions
     setNewTransactionAmount('');
     setNewTransactionDescription('');
-    toast({ title: "Transaction Added", description: `Added '${newTransactionDescription.trim()}' for ${amount} Rs.` });
+    toast({ title: "Bank Transaction Added", description: `Added '${newTransactionDescription.trim()}' for ${amount} Rs.` });
     setCurrentPage(1); 
   };
 
   const handleQuickRebuy = () => {
     if (isActionsDisabled) return;
-    onAddTransaction(player.id, -400, "Re-buy (Player takes 400)");
+    onAddTransaction(player.id, -400, "Re-buy (Player takes 400)"); // Bank transaction
     toast({ title: "Re-buy Added", description: `Added Re-buy for ${player.name} (Player takes 400 Rs).` });
-    setCurrentPage(1); // Go to first page to see new transaction
+    setCurrentPage(1); 
   };
 
   const openEditModal = (tx: Transaction) => {
-    if (isActionsDisabled) return;
+    if (isActionsDisabled || (tx.transactionType && tx.transactionType !== 'bank')) {
+       toast({ title: "Cannot Edit", description: "This transaction type cannot be edited.", variant: "destructive"});
+      return;
+    }
     setEditingTransaction(tx);
     setEditTxAmount(tx.amount.toString());
     setEditTxDescription(tx.description);
@@ -110,7 +119,7 @@ export function ManageTransactionsDialog({
 
   const handleEditTransactionSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingTransaction || isActionsDisabled) return;
+    if (!editingTransaction || isActionsDisabled || (editingTransaction.transactionType && editingTransaction.transactionType !== 'bank')) return;
     const amount = parseFloat(editTxAmount);
     if (isNaN(amount)) {
       toast({ title: "Error", description: "Invalid transaction amount for edit.", variant: "destructive" });
@@ -131,7 +140,7 @@ export function ManageTransactionsDialog({
     }
   };
 
-  if (!player) return null; // Should not happen if isOpen is true and player is managed correctly by parent
+  if (!player) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -142,11 +151,11 @@ export function ManageTransactionsDialog({
             Manage Transactions for {player.name}
           </DialogTitle>
           <DialogDescription>
-            View, add, edit, or delete transactions.
+            View, add (bank), edit (bank), or delete (bank) transactions. P2P transfers are immutable here.
             {isActionsDisabled && " (Actions disabled - player/session finalized)"}
           </DialogDescription>
         </DialogHeader>
-
+        <TooltipProvider>
         <div className="flex-grow flex flex-col py-4 space-y-4 overflow-y-auto pr-2">
           
           <div className="space-y-3">
@@ -157,21 +166,38 @@ export function ManageTransactionsDialog({
                <p className="text-sm text-muted-foreground py-4 text-center">No transactions on this page.</p>
             ) : (
               <ul className="space-y-2 min-h-[100px]"> 
-                {currentTransactions.map((tx) => (
+                {currentTransactions.map((tx) => {
+                  const isP2P = tx.transactionType && tx.transactionType !== 'bank';
+                  const p2pTooltip = isP2P ? (tx.transactionType === 'player_to_player_send' ? `Sent to ${tx.relatedPlayerName}` : `Received from ${tx.relatedPlayerName}`) : "Bank Transaction";
+                  const canEditOrDelete = !isActionsDisabled && !isP2P;
+
+                  return (
                   <li key={tx.id} className="text-sm flex justify-between items-center p-2.5 rounded-md border bg-card hover:bg-muted/30 transition-colors group">
-                    <div>
-                      <span className="font-medium text-foreground/90">{tx.description}</span>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-medium text-foreground/90">{tx.description}</span>
+                        {isP2P && (
+                          <Tooltip delayDuration={100}>
+                            <TooltipTrigger asChild>
+                              <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-primary cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-xs">
+                              <p>{p2pTooltip}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
                       <p className={`text-xs ${tx.amount < 0 ? 'text-destructive' : 'text-emerald-500'}`}>{tx.amount > 0 ? '+' : ''}{tx.amount.toFixed(2)} Rs.</p>
                       <p className="text-xs text-muted-foreground/70 pt-0.5">{format(new Date(tx.timestamp), "MMM d, p")}</p>
                     </div>
                     {!isActionsDisabled && (
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="icon" onClick={() => openEditModal(tx)} aria-label="Edit transaction" className="h-7 w-7 text-muted-foreground hover:text-primary">
+                        <Button variant="ghost" size="icon" onClick={() => openEditModal(tx)} aria-label="Edit transaction" className="h-7 w-7 text-muted-foreground hover:text-primary" disabled={!canEditOrDelete}>
                           <Edit3 className="h-4 w-4" />
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive h-7 w-7" aria-label="Delete transaction">
+                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive h-7 w-7" aria-label="Delete transaction" disabled={!canEditOrDelete}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
@@ -179,7 +205,7 @@ export function ManageTransactionsDialog({
                             <AlertDialogTxHeader>
                               <AlertDialogTxTitle>Delete Transaction?</AlertDialogTxTitle>
                               <AlertDialogDescription>
-                                Are you sure you want to delete transaction: {tx.description} ({tx.amount.toFixed(2)} Rs.)? This cannot be undone.
+                                Are you sure you want to delete bank transaction: {tx.description} ({tx.amount.toFixed(2)} Rs.)? This cannot be undone.
                               </AlertDialogDescription>
                             </AlertDialogTxHeader>
                             <AlertDialogTxFooter>
@@ -196,7 +222,7 @@ export function ManageTransactionsDialog({
                       </div>
                     )}
                   </li>
-                ))}
+                )})}
               </ul>
             )}
           </div>
@@ -225,12 +251,12 @@ export function ManageTransactionsDialog({
                 onClick={handleQuickRebuy}
                 disabled={isActionsDisabled}
               >
-                <Coins className="mr-2 h-4 w-4" /> Quick Re-buy (Player takes 400)
+                <Coins className="mr-2 h-4 w-4" /> Quick Re-buy (Player takes 400 from Bank)
               </Button>
               <form onSubmit={handleAddTransactionSubmit} className="space-y-3 pt-2">
                 <h5 className="font-semibold text-sm text-foreground/90 flex items-center">
                   <FilePlus className="h-4 w-4 mr-2 text-primary" />
-                  Add Custom Transaction
+                  Add Bank Transaction
                 </h5>
                 <div>
                   <Label htmlFor={`mng-tx-desc-${player.id}`} className="text-xs font-medium text-muted-foreground">Description</Label>
@@ -261,7 +287,7 @@ export function ManageTransactionsDialog({
                    <p className="text-xs text-muted-foreground/70 mt-1">Positive if player gives to bank, negative if player takes from bank.</p>
                 </div>
                 <Button type="submit" size="sm" className="w-full" disabled={isActionsDisabled}>
-                  <PlusCircle className="mr-2 h-4 w-4" /> Add Transaction
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add Bank Transaction
                 </Button>
               </form>
             </>
@@ -270,7 +296,7 @@ export function ManageTransactionsDialog({
             <p className="text-sm text-center text-muted-foreground mt-4">Transaction management is disabled as the player/session is finalized.</p>
           )}
         </div>
-
+        </TooltipProvider>
         <DialogFooter className="mt-auto pt-4 border-t border-border/30">
           <DialogClose asChild>
             <Button type="button" variant="outline" onClick={onClose}>Close</Button>
@@ -278,11 +304,11 @@ export function ManageTransactionsDialog({
         </DialogFooter>
       </DialogContent>
 
-      {editingTransaction && !isActionsDisabled && (
+      {editingTransaction && !isActionsDisabled && editingTransaction.transactionType === 'bank' && (
         <Dialog open={!!editingTransaction} onOpenChange={(open) => !open && setEditingTransaction(null)}>
           <DialogContent className="sm:max-w-xs"> 
             <DialogHeader>
-              <DialogTitle className="flex items-center"><Edit3 className="mr-2 h-5 w-5 text-primary"/>Edit Transaction</DialogTitle>
+              <DialogTitle className="flex items-center"><Edit3 className="mr-2 h-5 w-5 text-primary"/>Edit Bank Transaction</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleEditTransactionSubmit} className="space-y-4 py-4">
               <div>

@@ -22,10 +22,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { MoreHorizontal, Edit2, PlusCircle, LogOut, Trash2, Coins, UserCog, Circle } from 'lucide-react'; // Added Circle
+import { MoreHorizontal, Edit2, PlusCircle, LogOut, Trash2, Coins, UserCog, Circle, ArrowRightLeft } from 'lucide-react';
 import { EditPlayerDialog } from './edit-player-dialog';
 import { ManageTransactionsDialog } from './manage-transactions-dialog';
 import { CashOutPlayerDialog } from './cash-out-player-dialog';
+import { TransferMoneyDialog } from './transfer-money-dialog'; // Import new dialog
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +41,7 @@ interface PlayersTableProps {
   onDeleteTransaction: (playerId: string, transactionId: string) => void;
   onDeletePlayer: (playerId: string) => void;
   onCashOutPlayer: (playerId: string, cashOutAmount: number, departureStatus: 'left_early' | 'stayed_till_end' | 'stayed_till_end_auto') => void;
+  onPlayerToPlayerTransfer: (senderId: string, recipientId: string, amount: number, description: string) => void; // New prop
   isSessionEnded: boolean;
 }
 
@@ -52,11 +54,13 @@ export function PlayersTable({
   onDeleteTransaction,
   onDeletePlayer,
   onCashOutPlayer,
+  onPlayerToPlayerTransfer, // New prop
   isSessionEnded,
 }: PlayersTableProps) {
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [managingTransactionsForPlayerId, setManagingTransactionsForPlayerId] = useState<string | null>(null);
   const [cashingOutPlayer, setCashingOutPlayer] = useState<Player | null>(null);
+  const [transferringMoneyFromPlayer, setTransferringMoneyFromPlayer] = useState<Player | null>(null); // State for new dialog
   const { toast } = useToast();
 
   const getPlayerBalanceInfo = (player: Player) => {
@@ -84,7 +88,7 @@ export function PlayersTable({
     if (player.departureStatus === 'active' && !isSessionEnded) return "Active";
     if (player.departureStatus === 'active' && isSessionEnded && player.cashedOutAmount !== undefined && player.cashOutTimestamp) return `Ended (Auto @ ${format(new Date(player.cashOutTimestamp), 'p')})`;
     if (player.departureStatus === 'left_early' && player.cashOutTimestamp) return `Left Early @ ${format(new Date(player.cashOutTimestamp), 'p')}`;
-    if (player.departureStatus === 'stayed_till_end' && player.cashOutTimestamp) return `Stayed End @ ${format(new Date(player.cashOutTimestamp), 'p')}`;
+    if (player.departureStatus === 'stayed_till_end' && player.cashOutTimestamp) return `Stayed End @ ${format(new Date(player.cashOutTimestamp), 'p')})`;
     if (player.departureStatus === 'stayed_till_end_auto' && player.cashOutTimestamp) return `Ended (Auto @ ${format(new Date(player.cashOutTimestamp), 'p')})`; 
     return "Finalized"; 
   };
@@ -104,6 +108,10 @@ export function PlayersTable({
     return players.find(p => p.id === cashingOutPlayer.id) || null;
   }, [players, cashingOutPlayer]);
 
+  const potentialTransferRecipients = useMemo(() => {
+    return players.filter(p => p.id !== transferringMoneyFromPlayer?.id && p.departureStatus === 'active');
+  }, [players, transferringMoneyFromPlayer]);
+
 
   return (
     <>
@@ -120,14 +128,14 @@ export function PlayersTable({
                 <TableHead className="text-right">Initial Balance (Rs.)</TableHead>
                 <TableHead className="text-right">Current/Final Balance (Rs.)</TableHead>
                 <TableHead className="text-right pr-6 w-[80px]">Actions</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="text-right pr-6 w-[120px]">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {players.map((player) => {
                 const balanceInfo = getPlayerBalanceInfo(player);
                 const isPlayerDisabledActions = (player.departureStatus !== 'active' && player.cashedOutAmount !== undefined) || isSessionEnded;
-                const isPlayerActiveForRebuy = player.departureStatus === 'active' && !isSessionEnded;
+                const isPlayerActiveForInteraction = player.departureStatus === 'active' && !isSessionEnded;
 
                 let statusIndicatorColor = "text-muted-foreground"; 
                 if (player.departureStatus === 'active' && !isSessionEnded) {
@@ -176,14 +184,21 @@ export function PlayersTable({
                                 onAddTransaction(player.id, -400, "Re-buy (Player takes 400)");
                                 toast({ title: "Re-buy Added", description: `${player.name} re-bought for 400 Rs.` });
                             }}
-                            disabled={!isPlayerActiveForRebuy}
+                            disabled={!isPlayerActiveForInteraction}
                           >
                             <Coins className="mr-2 h-4 w-4" /> Quick Re-buy
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => setManagingTransactionsForPlayerId(player.id)}
+                            // Transactions can be viewed even if player/session finalized, actions within dialog are disabled
                           >
                             <Coins className="mr-2 h-4 w-4" /> Manage Transactions
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setTransferringMoneyFromPlayer(player)}
+                            disabled={!isPlayerActiveForInteraction || players.filter(p=>p.departureStatus === 'active' && p.id !== player.id).length === 0}
+                          >
+                            <ArrowRightLeft className="mr-2 h-4 w-4" /> Transfer to Player
                           </DropdownMenuItem>
                            <DropdownMenuItem
                             onClick={() => setCashingOutPlayer(player)}
@@ -196,7 +211,7 @@ export function PlayersTable({
                             <AlertDialogTrigger asChild>
                                <DropdownMenuItem 
                                 className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                                disabled={(isPlayerDisabledActions && player.transactions.length > 0) || (isSessionEnded && player.transactions.length > 0) }
+                                disabled={(isPlayerDisabledActions && player.transactions.length > 0) || (isSessionEnded && player.transactions.length > 0 && player.departureStatus !== 'active') }
                                 onSelect={(e) => e.preventDefault()} 
                                >
                                 <Trash2 className="mr-2 h-4 w-4" /> Delete Player
@@ -223,8 +238,8 @@ export function PlayersTable({
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
-                    <TableCell className="text-sm">
-                       <div className="flex items-center gap-2">
+                    <TableCell className="text-sm text-right pr-6">
+                       <div className="flex items-center justify-end gap-2">
                         <Circle className={cn("h-2.5 w-2.5 shrink-0", statusIndicatorColor)} fill={statusIndicatorColor} />
                         <span className="text-muted-foreground whitespace-nowrap">{getPlayerStatusText(player)}</span>
                       </div>
@@ -265,6 +280,17 @@ export function PlayersTable({
           isOpen={!!cashingOutPlayer}
           onClose={() => setCashingOutPlayer(null)}
           onCashOutPlayer={onCashOutPlayer}
+          isSessionEnded={isSessionEnded}
+        />
+      )}
+
+      {transferringMoneyFromPlayer && (
+        <TransferMoneyDialog
+          sender={transferringMoneyFromPlayer}
+          potentialRecipients={potentialTransferRecipients}
+          isOpen={!!transferringMoneyFromPlayer}
+          onClose={() => setTransferringMoneyFromPlayer(null)}
+          onConfirmTransfer={onPlayerToPlayerTransfer}
           isSessionEnded={isSessionEnded}
         />
       )}
