@@ -23,7 +23,7 @@ interface PlayerStat extends Player {
 
 export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayProps) {
   const [divisionEnabled, setDivisionEnabled] = useState(false);
-  const [showPikachuGif, setShowPikachuGif] = useState(false);
+  const [showWinnerGif, setShowWinnerGif] = useState(false);
   const [showPsyduckGif, setShowPsyduckGif] = useState(false);
 
   const playerStats: PlayerStat[] = useMemo(() => {
@@ -82,8 +82,8 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
             {topWinner && (
               <Card
                 className="relative bg-emerald-600/10 border-emerald-500/40 shadow-lg overflow-hidden group"
-                onMouseEnter={() => setShowPikachuGif(true)}
-                onMouseLeave={() => setShowPikachuGif(false)}
+                onMouseEnter={() => setShowWinnerGif(true)}
+                onMouseLeave={() => setShowWinnerGif(false)}
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-3">
@@ -95,15 +95,15 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
                   <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{topWinner.name}</p>
                   <p className="text-xl text-emerald-500 dark:text-emerald-300">Net Profit: +{topWinner.displayNetResult.toFixed(2)} Rs.</p>
                 </CardContent>
-                {showPikachuGif && (
+                {showWinnerGif && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-emerald-500/10 transition-opacity duration-300 ease-in-out">
                     <Image
-                      src="https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExbmY4cWV0NWN0ejR5cmZ5dzhzYm1vdjA5dGR2ZHhsaXV1aXc2MXR1cyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/kyLYrgT15w4Hq/giphy.gif"
-                      alt="Pikachu dancing happily"
+                      src="https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExd2JpZ2JkZ3N5ZzAxbDRoemJtbmZmdjk5MDh2eG05cnJsdG45ejl2OSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3oz9ZE2Oo9zRC/giphy.gif"
+                      alt="Happy celebration GIF"
                       width={150}
                       height={150}
                       className="object-contain opacity-80"
-                      data-ai-hint="Pikachu dance"
+                      data-ai-hint="celebration winner"
                       unoptimized
                     />
                   </div>
