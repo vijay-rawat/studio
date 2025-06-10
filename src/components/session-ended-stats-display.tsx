@@ -2,11 +2,12 @@
 "use client";
 
 import type * as React from 'react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { Player } from '@/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Trophy, TrendingDown, Users, ListChecks, BarChart3 } from 'lucide-react';
+import { Trophy, TrendingDown, Users, ListChecks, BarChart3, UsersRound, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 
@@ -15,28 +16,32 @@ interface SessionEndedStatsDisplayProps {
 }
 
 interface PlayerStat extends Player {
-  finalNetResult: number;
+  finalNetResult: number; // Original actual result
+  displayNetResult: number; // Potentially modified result for display (e.g., halved)
 }
 
 export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayProps) {
+  const [divisionEnabled, setDivisionEnabled] = useState(false);
+
   const playerStats: PlayerStat[] = useMemo(() => {
     return players.map(p => {
       const liveBalance = p.initialBalance + p.transactions.reduce((sum, tx) => sum + tx.amount, 0);
       const finalNetResult = (p.cashedOutAmount ?? 0) + liveBalance;
-      return { ...p, name: p.name, finalNetResult };
-    }).sort((a, b) => b.finalNetResult - a.finalNetResult);
-  }, [players]);
+      const displayNetResult = divisionEnabled ? finalNetResult / 2 : finalNetResult;
+      return { ...p, name: p.name, finalNetResult, displayNetResult };
+    }).sort((a, b) => b.displayNetResult - a.displayNetResult); // Sort by displayNetResult
+  }, [players, divisionEnabled]);
 
   const topWinner = useMemo(() => {
     if (playerStats.length === 0) return null;
-    const winners = playerStats.filter(p => p.finalNetResult > 0);
+    const winners = playerStats.filter(p => p.displayNetResult > 0);
     return winners.length > 0 ? winners[0] : null;
   }, [playerStats]);
 
   const topLoser = useMemo(() => {
     if (playerStats.length === 0) return null;
-    const losers = playerStats.filter(p => p.finalNetResult < 0);
-    const sortedLosers = losers.sort((a,b) => a.finalNetResult - b.finalNetResult);
+    const losers = playerStats.filter(p => p.displayNetResult < 0);
+    const sortedLosers = losers.sort((a,b) => a.displayNetResult - b.displayNetResult); // Sort by displayNetResult
     return sortedLosers.length > 0 ? sortedLosers[0] : null;
   }, [playerStats]);
 
@@ -61,7 +66,10 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
             <BarChart3 className="h-8 w-8 text-primary" />
             <div>
                 <CardTitle className="text-3xl">Session Ended - Final Stats</CardTitle>
-                <CardDescription>Summary of player performance for the concluded game.</CardDescription>
+                <CardDescription>
+                  Summary of player performance for the concluded game.
+                  {divisionEnabled && <span className="block text-accent font-semibold">(Displaying halved results for pot split)</span>}
+                </CardDescription>
             </div>
         </div>
       </CardHeader>
@@ -78,7 +86,7 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
                 </CardHeader>
                 <CardContent>
                   <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{topWinner.name}</p>
-                  <p className="text-xl text-emerald-500 dark:text-emerald-300">Net Profit: +{topWinner.finalNetResult.toFixed(2)} Rs.</p>
+                  <p className="text-xl text-emerald-500 dark:text-emerald-300">Net Profit: +{topWinner.displayNetResult.toFixed(2)} Rs.</p>
                 </CardContent>
               </Card>
             )}
@@ -92,7 +100,7 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
                 </CardHeader>
                 <CardContent>
                   <p className="text-3xl font-bold text-destructive">{topLoser.name}</p>
-                  <p className="text-xl text-destructive/90 dark:text-destructive/80">Net Loss: {topLoser.finalNetResult.toFixed(2)} Rs.</p>
+                  <p className="text-xl text-destructive/90 dark:text-destructive/80">Net Loss: {topLoser.displayNetResult.toFixed(2)} Rs.</p>
                 </CardContent>
               </Card>
             )}
@@ -118,11 +126,11 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
                     <span>{player.name}</span>
                     <span className={cn(
                         "font-semibold",
-                        player.finalNetResult > 0 && "text-emerald-500",
-                        player.finalNetResult < 0 && "text-destructive",
-                        player.finalNetResult === 0 && "text-muted-foreground"
+                        player.displayNetResult > 0 && "text-emerald-500",
+                        player.displayNetResult < 0 && "text-destructive",
+                        player.displayNetResult === 0 && "text-muted-foreground"
                     )}>
-                        {player.finalNetResult > 0 ? '+' : ''}{player.finalNetResult.toFixed(2)} Rs.
+                        {player.displayNetResult > 0 ? '+' : ''}{player.displayNetResult.toFixed(2)} Rs.
                     </span>
                     </li>
                 ))}
@@ -133,6 +141,28 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
           )}
         </div>
       </CardContent>
+      {players.length > 0 && (
+        <CardFooter className="flex-col sm:flex-row gap-2 pt-6 border-t border-border/30">
+            <Button 
+                onClick={() => setDivisionEnabled(true)} 
+                variant="outline"
+                className="w-full sm:w-auto"
+                disabled={divisionEnabled}
+            >
+                <UsersRound className="mr-2 h-4 w-4" />
+                Split Pot (Halve Results)
+            </Button>
+            <Button 
+                onClick={() => setDivisionEnabled(false)} 
+                variant="outline"
+                className="w-full sm:w-auto"
+                disabled={!divisionEnabled}
+            >
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Reset Split
+            </Button>
+        </CardFooter>
+      )}
     </Card>
   );
 }
