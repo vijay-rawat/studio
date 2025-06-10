@@ -4,90 +4,104 @@
 
 @layer base {
   :root {
-    /* Galactic Indigo Theme */
-    --background: 230 40% 15%; /* Deep Indigo */
-    --foreground: 220 25% 90%; /* Light Cool Gray/Silver */
+    /* Base values for light theme, or if no .dark class is applied */
+    --background: 0 0% 98%; /* Light Mode: Very Light Gray */
+    --foreground: 220 10% 10%; /* Light Mode: Dark Gray-Blue */
 
-    --card: 230 40% 18%; /* Slightly Lighter Indigo */
-    --card-foreground: 220 25% 90%;
+    --card: 0 0% 100%; /* Light Mode: White */
+    --card-foreground: 220 10% 10%;
 
-    --popover: 230 40% 17%; /* Popover Indigo */
-    --popover-foreground: 220 25% 90%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 10% 10%;
 
-    --primary: 210 80% 65%; /* Bright, Lighter Space Blue */
-    --primary-foreground: 230 40% 10%; /* Very Dark Indigo for text on primary */
+    --primary: 215 70% 50%; /* Light Mode: Bright Blue */
+    --primary-foreground: 0 0% 100%; /* Light Mode: White */
 
-    --secondary: 230 30% 28%; /* Muted Indigo */
-    --secondary-foreground: 220 20% 80%; /* Lighter Muted Foreground */
+    --secondary: 210 10% 90%; /* Light Mode: Light Gray */
+    --secondary-foreground: 220 10% 20%;
 
-    --muted: 230 30% 22%; /* Darker Muted Indigo */
-    --muted-foreground: 220 20% 60%; /* Standard Muted Foreground */
+    --muted: 210 10% 94%;
+    --muted-foreground: 220 10% 45%;
 
-    --accent: 40 90% 60%; /* Bright Warm Orange/Gold */
-    --accent-foreground: 40 100% 10%; /* Dark brown/black for text on accent */
+    --accent: 200 90% 60%; /* Light Mode: Bright Cyan */
+    --accent-foreground: 220 10% 10%;
+
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 10% 85%;
+    --input: 210 10% 92%;
+    --input-foreground: 220 10% 10%;
+    --ring: 215 70% 55%;
+
+    --radius: 0.5rem;
+
+    /* Chart colors for light theme (can be adjusted) */
+    --chart-1: 215 70% 50%; /* Primary */
+    --chart-2: 200 90% 60%; /* Accent */
+    --chart-3: 120 60% 45%; /* Green */
+    --chart-4: 30 80% 55%;  /* Orange */
+    --chart-5: 280 60% 60%; /* Purple */
+
+    /* Sidebar colors for light theme */
+    --sidebar-background: 210 10% 97%;
+    --sidebar-foreground: 220 10% 20%;
+    --sidebar-primary: 215 70% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 200 90% 60%;
+    --sidebar-accent-foreground: 220 10% 10%;
+    --sidebar-border: 210 10% 88%;
+    --sidebar-ring: 215 70% 55%;
+  }
+
+  .dark {
+    /* Polished Steel & Cobalt Theme */
+    --background: 220 15% 18%; /* Dark Cool Slate */
+    --foreground: 210 10% 85%; /* Light Cool Gray */
+
+    --card: 220 15% 22%; /* Slightly Lighter Dark Cool Slate */
+    --card-foreground: 210 10% 85%;
+
+    --popover: 220 15% 20%;
+    --popover-foreground: 210 10% 85%;
+
+    --primary: 215 70% 55%; /* Bright Cobalt Blue */
+    --primary-foreground: 210 10% 95%; /* Very Light Gray/White */
+
+    --secondary: 220 12% 30%; /* Muted Cool Slate */
+    --secondary-foreground: 210 8% 75%; /* Lighter Muted Cool Gray */
+
+    --muted: 220 12% 25%; /* Darker Muted Cool Slate */
+    --muted-foreground: 210 8% 55%; /* Standard Muted Cool Gray */
+
+    --accent: 200 80% 70%; /* Bright, Light Cyan/Sky Blue */
+    --accent-foreground: 220 15% 10%; /* Dark text for accent */
 
     --destructive: 0 62.8% 50.6%; /* Saturated Red (Kept Standard) */
     --destructive-foreground: 0 0% 98%;
 
-    --border: 230 40% 25%; /* Indigo Border */
-    --input: 230 40% 20%; /* Indigo Input Background */
-    --input-foreground: 220 25% 90%; /* Light text for input */
+    --border: 220 15% 28%; /* Cool Slate Border */
+    --input: 220 15% 24%; /* Cool Slate Input Background */
+    --input-foreground: 210 10% 85%;
 
-    --ring: 210 80% 70%; /* Ring color, slightly brighter primary */
+    --ring: 215 70% 60%; /* Ring color, slightly brighter primary */
 
-    --radius: 0.5rem;
+    /* Chart specific colors for dark theme */
+    --chart-1: 215 70% 55%; /* Cobalt Blue (Matches Primary) */
+    --chart-2: 200 80% 70%; /* Bright Cyan (Matches Accent) */
+    --chart-3: 120 60% 55%; /* A distinct green */
+    --chart-4: 30 80% 60%;  /* A distinct orange */
+    --chart-5: 280 60% 65%; /* A distinct purple */
 
-    /* Sidebar colors (Galactic Indigo) */
-    --sidebar-background: 230 40% 13%; /* Slightly darker than main bg */
-    --sidebar-foreground: 220 25% 90%;
-    --sidebar-primary: 210 80% 65%; /* Main primary */
-    --sidebar-primary-foreground: 230 40% 10%; /* Main primary-foreground */
-    --sidebar-accent: 40 90% 60%; /* Main accent */
-    --sidebar-accent-foreground: 40 100% 10%; /* Main accent-foreground */
-    --sidebar-border: 230 40% 23%; /* Slightly darker than main border */
-    --sidebar-ring: 210 80% 70%; /* Main ring */
-  }
-
-  .light { /* Optional Light theme, if ever needed - kept as is from previous state */
-    --background: 0 0% 98%;
-    --foreground: 240 10% 3.9%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-
-    --primary: 215 65% 45%; /* Adjusted primary for light mode */
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 0 0% 92%; /* Light gray */
-    --secondary-foreground: 240 10% 10%;
-
-    --muted: 0 0% 95%;
-    --muted-foreground: 0 0% 45.1%;
-
-    --accent: 40 80% 55%; /* Adjusted accent for light mode */
-    --accent-foreground: 240 10% 10%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 0 0% 90%;
-    --input: 0 0% 94%;
-    --input-foreground: 240 10% 3.9%;
-    --ring: 215 65% 50%;
-    
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 97%;
-    --sidebar-foreground: 240 10% 20%;
-    --sidebar-primary: 215 65% 45%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 40 80% 55%;
-    --sidebar-accent-foreground: 240 10% 10%;
-    --sidebar-border: 0 0% 88%;
-    --sidebar-ring: 215 65% 50%;
+    /* Sidebar colors (Polished Steel & Cobalt) */
+    --sidebar-background: 220 15% 16%; /* Slightly darker than main bg */
+    --sidebar-foreground: 210 10% 85%;
+    --sidebar-primary: 215 70% 55%; /* Main primary */
+    --sidebar-primary-foreground: 210 10% 95%; /* Main primary-foreground */
+    --sidebar-accent: 200 80% 70%; /* Main accent */
+    --sidebar-accent-foreground: 220 15% 10%; /* Main accent-foreground */
+    --sidebar-border: 220 15% 26%; /* Slightly darker than main border */
+    --sidebar-ring: 215 70% 60%; /* Main ring */
   }
 }
 
