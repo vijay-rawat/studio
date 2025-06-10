@@ -5,10 +5,20 @@ import type * as React from 'react';
 import { useMemo } from 'react';
 import type { Player } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Trophy, TrendingDown, Users, TrendingUp, BarChartBig } from 'lucide-react'; // Added Users here
+import { Trophy, TrendingDown, Users, BarChartBig, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+
 
 interface SessionEndedStatsDisplayProps {
   players: Player[];
@@ -22,25 +32,40 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
   const playerStats: PlayerStat[] = useMemo(() => {
     return players.map(p => {
       const liveBalance = p.initialBalance + p.transactions.reduce((sum, tx) => sum + tx.amount, 0);
-      // If cashedOutAmount is undefined (shouldn't happen if session end logic is correct),
-      // it means they were active till end and auto-cashed out based on liveBalance.
-      // For this calculation, cashedOutAmount should always be set by the end session logic.
       const finalNetResult = (p.cashedOutAmount ?? 0) + liveBalance;
-      return { ...p, finalNetResult };
-    }).sort((a, b) => b.finalNetResult - a.finalNetResult); // Sort by net result descending
+      return { ...p, name: p.name, finalNetResult }; // Ensure name is explicitly carried for chart
+    }).sort((a, b) => b.finalNetResult - a.finalNetResult);
   }, [players]);
 
   const topWinner = useMemo(() => {
     if (playerStats.length === 0) return null;
     const winners = playerStats.filter(p => p.finalNetResult > 0);
-    return winners.length > 0 ? winners[0] : null; // Highest positive result
+    return winners.length > 0 ? winners[0] : null;
   }, [playerStats]);
 
   const topLoser = useMemo(() => {
     if (playerStats.length === 0) return null;
     const losers = playerStats.filter(p => p.finalNetResult < 0);
-    return losers.length > 0 ? losers[losers.length - 1] : null; // Lowest negative result (most negative)
+    // Sort losers by the most negative amount
+    const sortedLosers = losers.sort((a,b) => a.finalNetResult - b.finalNetResult);
+    return sortedLosers.length > 0 ? sortedLosers[0] : null;
   }, [playerStats]);
+
+  const chartData = useMemo(() => {
+    // Sort for chart display, typically largest positive to largest negative
+    return [...playerStats].sort((a, b) => b.finalNetResult - a.finalNetResult).map(p => ({
+      name: p.name,
+      amount: p.finalNetResult,
+    }));
+  }, [playerStats]);
+  
+  const chartConfig = {
+    amount: {
+      label: "Net Result (Rs.)",
+    },
+    // Add individual player colors if needed, or rely on Cell fill
+  };
+
 
   if (players.length === 0) {
     return (
@@ -66,34 +91,34 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
             </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-8 pt-6">
         { (topWinner || topLoser) && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {topWinner && (
-              <Card className="bg-emerald-500/10 border-emerald-500/30">
+              <Card className="bg-emerald-600/10 border-emerald-500/40 shadow-lg">
                 <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2">
-                    <Trophy className="h-7 w-7 text-emerald-600" />
-                    <CardTitle className="text-xl text-emerald-700">Top Winner</CardTitle>
+                  <div className="flex items-center gap-3">
+                    <Trophy className="h-8 w-8 text-emerald-500" />
+                    <CardTitle className="text-xl text-emerald-600 dark:text-emerald-400">Top Winner</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold text-emerald-600">{topWinner.name}</p>
-                  <p className="text-lg text-emerald-500">Net Profit: +{topWinner.finalNetResult.toFixed(2)} Rs.</p>
+                  <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{topWinner.name}</p>
+                  <p className="text-xl text-emerald-500 dark:text-emerald-300">Net Profit: +{topWinner.finalNetResult.toFixed(2)} Rs.</p>
                 </CardContent>
               </Card>
             )}
             {topLoser && (
-              <Card className="bg-destructive/10 border-destructive/30">
+              <Card className="bg-destructive/10 border-destructive/40 shadow-lg">
                 <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2">
-                    <TrendingDown className="h-7 w-7 text-destructive" />
+                  <div className="flex items-center gap-3">
+                    <TrendingDown className="h-8 w-8 text-destructive" />
                     <CardTitle className="text-xl text-destructive">Top Loser</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold text-destructive">{topLoser.name}</p>
-                  <p className="text-lg text-red-500">Net Loss: {topLoser.finalNetResult.toFixed(2)} Rs.</p>
+                  <p className="text-3xl font-bold text-destructive">{topLoser.name}</p>
+                  <p className="text-xl text-destructive/90 dark:text-destructive/80">Net Loss: {topLoser.finalNetResult.toFixed(2)} Rs.</p>
                 </CardContent>
               </Card>
             )}
@@ -101,35 +126,36 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
         )}
         
         <div>
-          <h3 className="text-xl font-semibold mb-3 text-foreground/90 flex items-center">
-            <Users className="mr-2 h-5 w-5 text-muted-foreground" /> All Player Results
-          </h3>
-          <Separator className="mb-4 bg-border/40"/>
-          <ScrollArea className="h-[300px] pr-3 -mr-3">
-            <ul className="space-y-3">
-              {playerStats.map((pStat) => (
-                <li 
-                  key={pStat.id} 
-                  className={cn(
-                    "flex justify-between items-center p-3.5 rounded-lg border",
-                    pStat.finalNetResult > 0 ? "bg-emerald-500/5 border-emerald-500/20" :
-                    pStat.finalNetResult < 0 ? "bg-destructive/5 border-destructive/20" :
-                    "bg-muted/30 border-muted/50"
-                  )}
+          <div className="flex items-center gap-2 mb-4">
+            <Users className="h-6 w-6 text-muted-foreground" />
+            <h3 className="text-xl font-semibold text-foreground/90">All Player Results</h3>
+          </div>
+          <Separator className="mb-6 bg-border/40"/>
+          {chartData.length > 0 ? (
+            <ChartContainer config={chartConfig} className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  layout="vertical"
+                  data={chartData}
+                  margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
                 >
-                  <span className="font-medium text-foreground">{pStat.name}</span>
-                  <span className={cn(
-                    "font-semibold",
-                    pStat.finalNetResult > 0 ? "text-emerald-500" :
-                    pStat.finalNetResult < 0 ? "text-destructive" :
-                    "text-foreground"
-                  )}>
-                    {pStat.finalNetResult > 0 ? '+' : ''}{pStat.finalNetResult.toFixed(2)} Rs.
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </ScrollArea>
+                  <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(value) => `${value} Rs.`}/>
+                  <YAxis dataKey="name" type="category" stroke="hsl(var(--muted-foreground))" fontSize={12} width={80} tick={{ dy: 2 }} />
+                  <Tooltip
+                    cursor={{ fill: 'hsl(var(--muted)/0.3)' }}
+                    content={<ChartTooltipContent />}
+                  />
+                  <Bar dataKey="amount" radius={[4, 4, 0, 0]} barSize={20}>
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.amount >= 0 ? 'hsl(var(--primary))' : 'hsl(var(--destructive))'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          ) : (
+            <p className="text-muted-foreground text-center py-4">No detailed player stats to display in chart.</p>
+          )}
         </div>
       </CardContent>
     </Card>
