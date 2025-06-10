@@ -98,12 +98,12 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
                 {showWinnerGif && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-emerald-500/10 transition-opacity duration-300 ease-in-out">
                     <Image
-                      src="https://i.giphy.com/media/U3qYN8S0j3bpK/giphy.gif" // Pikachu electric attack
-                      alt="Pikachu using electric attack GIF"
+                      src="https://i.giphy.com/media/67ThRZlYBvibtdF9JH/giphy.gif" 
+                      alt="Money rain celebration GIF"
                       width={150}
                       height={150}
                       className="object-contain opacity-80"
-                      data-ai-hint="Pikachu electric winner"
+                      data-ai-hint="money rain celebration"
                       unoptimized
                     />
                   </div>
@@ -203,4 +203,6 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
     </Card>
   );
 }
+    
+
     
