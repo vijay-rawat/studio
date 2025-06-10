@@ -96,14 +96,14 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
                   <p className="text-xl text-emerald-500 dark:text-emerald-300">Net Profit: +{topWinner.displayNetResult.toFixed(2)} Rs.</p>
                 </CardContent>
                 {showWinnerGif && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-emerald-500/10 transition-opacity duration-300 ease-in-out">
+                  <div className="absolute top-0 bottom-0 right-0 w-[150px] flex items-center justify-end p-2 pointer-events-none transition-opacity duration-300 ease-in-out">
                     <Image
-                      src="https://i.giphy.com/media/67ThRZlYBvibtdF9JH/giphy.gif" 
-                      alt="Money rain celebration GIF"
+                      src="https://i.giphy.com/media/9wLKh6ms5t9qZ3rYFT/giphy.gif"
+                      alt="Akshay Kumar Paisa hi paisa hoga meme"
                       width={150}
                       height={150}
-                      className="object-contain opacity-80"
-                      data-ai-hint="money rain celebration"
+                      className="object-contain opacity-90"
+                      data-ai-hint="akshay kumar paisa"
                       unoptimized
                     />
                   </div>
@@ -127,13 +127,13 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
                   <p className="text-xl text-destructive/90 dark:text-destructive/80">Net Loss: {topLoser.displayNetResult.toFixed(2)} Rs.</p>
                 </CardContent>
                  {showPsyduckGif && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-destructive/10 transition-opacity duration-300 ease-in-out">
+                  <div className="absolute top-0 bottom-0 right-0 w-[150px] flex items-center justify-end p-2 pointer-events-none transition-opacity duration-300 ease-in-out">
                     <Image
                       src="https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExcmRoc3g4M2ZpMW11dWQwaTVvOWI4eDNqZXh1NzRtbjFhcmR2ZHF1ZCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/6oFNB3JPuLpAs/giphy.gif"
                       alt="Sad or confused Psyduck holding its head"
                       width={150}
                       height={150}
-                      className="object-contain opacity-80"
+                      className="object-contain opacity-90"
                       data-ai-hint="Psyduck confused head"
                       unoptimized
                     />
@@ -203,6 +203,8 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
     </Card>
   );
 }
+    
+
     
 
     
