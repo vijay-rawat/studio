@@ -98,10 +98,10 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
                 {showWinnerGif && (
                   <div className="absolute top-0 bottom-0 right-0 w-[150px] flex items-center justify-end p-2 pointer-events-none transition-opacity duration-300 ease-in-out">
                     <Image
-                      src="https://i.giphy.com/media/lptjRBxFKCJmFoibP3/giphy.gif"
+                      src="https://i.giphy.com/media/67ThRZlYBvTeA7QAHk/giphy.gif"
                       alt="Funny money rain celebration"
                       width={150}
-                      height={150}
+                      height={150} 
                       className="object-contain opacity-90"
                       data-ai-hint="money rain celebration"
                       unoptimized
@@ -208,3 +208,4 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
     
 
     
+
