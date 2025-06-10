@@ -98,13 +98,13 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
                 {showPikachuGif && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-emerald-500/10 transition-opacity duration-300 ease-in-out">
                     <Image
-                      src="https://placehold.co/200x200.png?text=Pikachu+GIF"
-                      alt="Pikachu celebrating"
+                      src="https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExdW1wdjQ4YWZjdXQ2MmV0NThpbjR0eDRhY3pkaTVmaTUzMWN6c2EwZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/W04FjXomStefP2K/giphy.gif"
+                      alt="Pikachu celebrating with electric waves"
                       width={150}
                       height={150}
                       className="object-contain opacity-80"
-                      data-ai-hint="Pikachu thunderbolt"
-                      unoptimized // Important for GIFs with next/image
+                      data-ai-hint="Pikachu happy dance"
+                      unoptimized 
                     />
                   </div>
                 )}
@@ -129,13 +129,13 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
                  {showPsyduckGif && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-destructive/10 transition-opacity duration-300 ease-in-out">
                     <Image
-                      src="https://placehold.co/200x200.png?text=Psyduck+Sad+GIF"
-                      alt="Sad Psyduck"
+                      src="https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExcmRoc3g4M2ZpMW11dWQwaTVvOWI4eDNqZXh1NzRtbjFhcmR2ZHF1ZCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/6oFNB3JPuLpAs/giphy.gif"
+                      alt="Sad or confused Psyduck holding its head"
                       width={150}
                       height={150}
                       className="object-contain opacity-80"
-                      data-ai-hint="Psyduck sad confused"
-                      unoptimized // Important for GIFs with next/image
+                      data-ai-hint="Psyduck confused head"
+                      unoptimized 
                     />
                   </div>
                 )}
