@@ -96,13 +96,13 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
                   <p className="text-xl text-emerald-500 dark:text-emerald-300">Net Profit: +{topWinner.displayNetResult.toFixed(2)} Rs.</p>
                 </CardContent>
                 {showWinnerGif && (
-                  <div className="absolute top-0 bottom-0 right-0 w-[150px] flex items-center justify-end p-2 pointer-events-none transition-opacity duration-300 ease-in-out">
+                  <div className="absolute top-0 bottom-0 right-0 w-[150px] pointer-events-none transition-opacity duration-300 ease-in-out">
                     <Image
-                      src="https://i.giphy.com/media/94EQmVHkveNck/giphy.gif" 
+                      src="https://i.giphy.com/media/94EQmVHkveNck/giphy.gif"
                       alt="Funny money GIF celebration"
-                      width={150}
-                      height={150} 
-                      className="object-contain opacity-90"
+                      layout="fill"
+                      objectFit="cover"
+                      className="opacity-90"
                       data-ai-hint="money rain funny"
                       unoptimized
                     />
@@ -211,5 +211,7 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
 
 
 
+
+    
 
     
