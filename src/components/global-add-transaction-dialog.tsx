@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { FilePlus, User } from 'lucide-react';
+import { FilePlus, User, PlusCircle } from 'lucide-react';
 
 interface GlobalAddTransactionDialogProps {
   isOpen: boolean;
