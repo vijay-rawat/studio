@@ -5,10 +5,11 @@ import type * as React from 'react';
 import { useState, useEffect } from 'react';
 import type { Player, Transaction } from '@/types';
 import { AddPlayerForm } from '@/components/add-player-form';
-import { PlayersTable } from '@/components/players-table'; // New component
+import { PlayersTable } from '@/components/players-table';
 import { SummaryDisplay } from '@/components/summary-display';
 import { SessionEndedStatsDisplay } from '@/components/session-ended-stats-display';
-import { ShieldCheck, Users, CalendarOff, Trash2 } from 'lucide-react';
+import { FullLedgerView } from '@/components/full-ledger-view'; // New Ledger View
+import { ShieldCheck, Users, CalendarOff, Trash2, Gamepad2, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -23,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Tabs
 import { useToast } from "@/hooks/use-toast";
 
 
@@ -82,31 +84,45 @@ export default function PokerTrackerPage() {
       toast({ title: "Session Ended", description: "Cannot add transactions after the session has ended.", variant: "destructive" });
       return;
     }
+    const targetPlayer = players.find(p => p.id === playerId);
+    if (!targetPlayer) {
+        toast({ title: "Error", description: "Player not found for transaction.", variant: "destructive"});
+        return;
+    }
+     if (targetPlayer.departureStatus !== 'active') {
+      toast({ title: "Player Finalized", description: `Cannot add transaction for ${targetPlayer.name} as they have already cashed out.`, variant: "destructive" });
+      return;
+    }
     const newTransaction: Transaction = {
       id: crypto.randomUUID(),
       amount,
       description,
       timestamp: new Date().toISOString(),
     };
-    setPlayers(prev => prev.map(p => 
-      p.id === playerId 
-        ? { ...p, transactions: [...p.transactions, newTransaction] } 
+    setPlayers(prev => prev.map(p =>
+      p.id === playerId
+        ? { ...p, transactions: [...p.transactions, newTransaction] }
         : p
     ));
   };
-  
+
   const handleEditTransaction = (playerId: string, transactionId: string, newAmount: number, newDescription: string) => {
     if (isSessionEnded) {
       toast({ title: "Session Ended", description: "Cannot edit transactions after the session has ended.", variant: "destructive" });
+      return;
+    }
+     const targetPlayer = players.find(p => p.id === playerId);
+    if (targetPlayer && targetPlayer.departureStatus !== 'active') {
+      toast({ title: "Player Finalized", description: `Cannot edit transaction for ${targetPlayer.name} as they have already cashed out.`, variant: "destructive" });
       return;
     }
     setPlayers(prev => prev.map(p => {
       if (p.id === playerId) {
         return {
           ...p,
-          transactions: p.transactions.map(tx => 
-            tx.id === transactionId 
-              ? { ...tx, amount: newAmount, description: newDescription, timestamp: new Date().toISOString() } 
+          transactions: p.transactions.map(tx =>
+            tx.id === transactionId
+              ? { ...tx, amount: newAmount, description: newDescription, timestamp: new Date().toISOString() }
               : tx
           ),
         };
@@ -120,9 +136,14 @@ export default function PokerTrackerPage() {
        toast({ title: "Session Ended", description: "Cannot delete transactions after the session has ended.", variant: "destructive" });
       return;
     }
-    setPlayers(prev => prev.map(p => 
-      p.id === playerId 
-        ? { ...p, transactions: p.transactions.filter(tx => tx.id !== transactionId) } 
+     const targetPlayer = players.find(p => p.id === playerId);
+    if (targetPlayer && targetPlayer.departureStatus !== 'active') {
+      toast({ title: "Player Finalized", description: `Cannot delete transaction for ${targetPlayer.name} as they have already cashed out.`, variant: "destructive" });
+      return;
+    }
+    setPlayers(prev => prev.map(p =>
+      p.id === playerId
+        ? { ...p, transactions: p.transactions.filter(tx => tx.id !== transactionId) }
         : p
     ));
   };
@@ -136,13 +157,13 @@ export default function PokerTrackerPage() {
   };
 
   const handleCashOutPlayer = (playerId: string, cashOutAmountInput: number, departureStatusInput: 'left_early' | 'stayed_till_end' | 'stayed_till_end_auto') => {
-    if (isSessionEnded && departureStatusInput !== 'stayed_till_end_auto') { 
+    const playerToCashOut = players.find(p => p.id === playerId);
+    if (!playerToCashOut) return;
+
+    if (isSessionEnded && departureStatusInput !== 'stayed_till_end_auto') {
       toast({ title: "Session Ended", description: "Cannot cash out players after the session has ended manually.", variant: "destructive" });
       return;
     }
-    
-    const playerToCashOut = players.find(p => p.id === playerId);
-    if (!playerToCashOut) return;
     const playerName = playerToCashOut.name;
 
     setPlayers(prev => prev.map(p => {
@@ -170,17 +191,17 @@ export default function PokerTrackerPage() {
       if (p.departureStatus === 'active') {
         playersAutoCashedOut++;
         const liveBalance = p.initialBalance + p.transactions.reduce((sum, tx) => sum + tx.amount, 0);
-        const effectiveCashOutAmount = Math.max(0, liveBalance);
+        const effectiveCashOutAmount = Math.max(0, liveBalance); // Chip value cannot be negative
         return {
           ...p,
           cashedOutAmount: effectiveCashOutAmount,
-          departureStatus: 'stayed_till_end' as 'stayed_till_end', 
+          departureStatus: 'stayed_till_end' as 'stayed_till_end',
           cashOutTimestamp: new Date().toISOString(),
         };
       }
       return p;
     });
-    
+
     setPlayers(updatedPlayers);
     setIsSessionEnded(true);
     toast({ title: "Session Ended", description: `Game session concluded. ${playersAutoCashedOut} active player(s) automatically cashed out. Final stats are now available.` });
@@ -225,98 +246,123 @@ export default function PokerTrackerPage() {
         </div>
       </header>
 
-      <main className="container mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start py-8 px-4 md:px-0">
-        <div className="lg:col-span-8 space-y-8">
-          {!isSessionEnded && <AddPlayerForm onAddPlayer={handleAddPlayer} isSessionEnded={isSessionEnded} />}
-          
-          {players.length > 0 && (
-            <div className="mt-6 flex justify-end gap-2">
-               {!isSessionEnded && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="border-accent/70 text-accent hover:bg-accent/10 hover:text-accent">
-                      <CalendarOff className="mr-2 h-4 w-4" /> End Game Session
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>End Game Session?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will finalize the game. Any active players will be automatically cashed out based on their current balance.
-                        You won't be able to add new players or transactions. Are you sure?
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleEndSession} className="bg-accent hover:bg-accent/90 text-accent-foreground">
-                        Yes, End Session
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-               )}
-               <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
-                    <Trash2 className="mr-2 h-4 w-4" /> Reset Game
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete all players, transactions, and session data, resetting the game.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleResetGame} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
-                      Yes, Reset Game
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+      <main className="container mx-auto py-8 px-4 md:px-0">
+        <Tabs defaultValue="game-view" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 md:w-auto md:inline-flex mb-6">
+            <TabsTrigger value="game-view" className="text-base py-2.5">
+              <Gamepad2 className="mr-2 h-5 w-5" /> Game View
+            </TabsTrigger>
+            <TabsTrigger value="full-ledger" className="text-base py-2.5">
+              <BookOpen className="mr-2 h-5 w-5" /> Full Ledger
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="game-view">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              <div className="lg:col-span-8 space-y-8">
+                {!isSessionEnded && <AddPlayerForm onAddPlayer={handleAddPlayer} isSessionEnded={isSessionEnded} />}
+
+                {players.length > 0 && (
+                  <div className="mt-6 flex justify-end gap-2">
+                     {!isSessionEnded && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm" className="border-accent/70 text-accent hover:bg-accent/10 hover:text-accent">
+                            <CalendarOff className="mr-2 h-4 w-4" /> End Game Session
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>End Game Session?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will finalize the game. Any active players will be automatically cashed out based on their current balance (chip value cannot be negative).
+                              You won't be able to add new players or transactions. Are you sure?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleEndSession} className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                              Yes, End Session
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                     )}
+                     <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">
+                          <Trash2 className="mr-2 h-4 w-4" /> Reset Game
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete all players, transactions, and session data, resetting the game.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleResetGame} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
+                            Yes, Reset Game
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                )}
+
+                {isSessionEnded && players.length > 0 && (
+                  <SessionEndedStatsDisplay players={players} />
+                )}
+
+                {players.length === 0 && !isSessionEnded ? (
+                  <Card className="mt-8 shadow-xl border-border/50">
+                    <CardContent className="p-10 text-center flex flex-col items-center justify-center min-h-[200px]">
+                      <Users className="h-20 w-20 text-muted-foreground/50 mx-auto mb-6" />
+                      <p className="text-2xl font-semibold text-muted-foreground mb-2">No Players Yet</p>
+                      <p className="text-sm text-muted-foreground/80">Use the form above to add players and start tracking balances.</p>
+                    </CardContent>
+                  </Card>
+                ) : players.length === 0 && isSessionEnded ? (
+                   <Card className="mt-8 shadow-xl border-border/50">
+                    <CardContent className="p-10 text-center flex flex-col items-center justify-center min-h-[200px]">
+                      <Users className="h-20 w-20 text-muted-foreground/50 mx-auto mb-6" />
+                      <p className="text-2xl font-semibold text-muted-foreground mb-2">Session Ended</p>
+                      <p className="text-sm text-muted-foreground/80">No player data was recorded for this session.</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <PlayersTable
+                    players={players}
+                    onUpdatePlayerName={handleUpdatePlayerName}
+                    onUpdateInitialBalance={handleUpdateInitialBalance}
+                    onAddTransaction={handleAddTransaction}
+                    onEditTransaction={handleEditTransaction}
+                    onDeleteTransaction={handleDeleteTransaction}
+                    onDeletePlayer={handleDeletePlayer}
+                    onCashOutPlayer={handleCashOutPlayer}
+                    isSessionEnded={isSessionEnded}
+                  />
+                )}
+              </div>
+
+              <aside className="lg:col-span-4 lg:sticky lg:top-8">
+                {players.length > 0 && <SummaryDisplay players={players} isSessionEnded={isSessionEnded} />}
+              </aside>
             </div>
-          )}
+          </TabsContent>
 
-          {isSessionEnded && players.length > 0 && (
-            <SessionEndedStatsDisplay players={players} />
-          )}
-
-          {players.length === 0 && !isSessionEnded ? (
-            <Card className="mt-8 shadow-xl border-border/50">
-              <CardContent className="p-10 text-center flex flex-col items-center justify-center min-h-[200px]">
-                <Users className="h-20 w-20 text-muted-foreground/50 mx-auto mb-6" />
-                <p className="text-2xl font-semibold text-muted-foreground mb-2">No Players Yet</p>
-                <p className="text-sm text-muted-foreground/80">Use the form above to add players and start tracking balances.</p>
-              </CardContent>
-            </Card>
-          ) : players.length === 0 && isSessionEnded ? (
-             <Card className="mt-8 shadow-xl border-border/50">
-              <CardContent className="p-10 text-center flex flex-col items-center justify-center min-h-[200px]">
-                <Users className="h-20 w-20 text-muted-foreground/50 mx-auto mb-6" />
-                <p className="text-2xl font-semibold text-muted-foreground mb-2">Session Ended</p>
-                <p className="text-sm text-muted-foreground/80">No player data was recorded for this session.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <PlayersTable
+          <TabsContent value="full-ledger">
+            <FullLedgerView
               players={players}
-              onUpdatePlayerName={handleUpdatePlayerName}
-              onUpdateInitialBalance={handleUpdateInitialBalance}
               onAddTransaction={handleAddTransaction}
               onEditTransaction={handleEditTransaction}
               onDeleteTransaction={handleDeleteTransaction}
-              onDeletePlayer={handleDeletePlayer}
-              onCashOutPlayer={handleCashOutPlayer}
               isSessionEnded={isSessionEnded}
             />
-          )}
-        </div>
-
-        <aside className="lg:col-span-4 lg:sticky lg:top-8">
-          {players.length > 0 && <SummaryDisplay players={players} isSessionEnded={isSessionEnded} />}
-        </aside>
+          </TabsContent>
+        </Tabs>
       </main>
       <footer className="text-center mt-12 py-8 border-t border-border/50">
         <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} Suncity Poker Ledger. Gamble responsibly.</p>
@@ -324,4 +370,6 @@ export default function PokerTrackerPage() {
     </div>
   );
 }
+    
+
     
