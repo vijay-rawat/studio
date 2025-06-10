@@ -8,6 +8,7 @@ import { AddPlayerForm } from '@/components/add-player-form';
 import { PlayersTable } from '@/components/players-table';
 import { SummaryDisplay } from '@/components/summary-display';
 import { SessionEndedStatsDisplay } from '@/components/session-ended-stats-display';
+import { SessionEndGraphDisplay } from '@/components/session-end-graph-display'; // New Import
 import { FullLedgerView } from '@/components/full-ledger-view';
 import { ShieldCheck, Users, CalendarOff, Trash2, Gamepad2, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -330,9 +331,26 @@ export default function PokerTrackerPage() {
                 )}
 
                 {isSessionEnded && players.length > 0 && (
-                  <SessionEndedStatsDisplay players={players} />
+                  <>
+                    <SessionEndedStatsDisplay players={players} />
+                    <SessionEndGraphDisplay players={players} />
+                  </>
                 )}
 
+                {!isSessionEnded && players.length > 0 && (
+                  <PlayersTable
+                    players={players}
+                    onUpdatePlayerName={handleUpdatePlayerName}
+                    onUpdateInitialBalance={handleUpdateInitialBalance}
+                    onAddTransaction={handleAddTransaction}
+                    onEditTransaction={handleEditTransaction}
+                    onDeleteTransaction={handleDeleteTransaction}
+                    onDeletePlayer={handleDeletePlayer}
+                    onCashOutPlayer={handleCashOutPlayer}
+                    isSessionEnded={isSessionEnded}
+                  />
+                )}
+                
                 {players.length === 0 && !isSessionEnded ? (
                   <Card className="mt-8 shadow-xl border-border/50">
                     <CardContent className="p-10 text-center flex flex-col items-center justify-center min-h-[200px]">
@@ -349,19 +367,7 @@ export default function PokerTrackerPage() {
                       <p className="text-sm text-muted-foreground/80">No player data was recorded for this session.</p>
                     </CardContent>
                   </Card>
-                ) : (
-                  <PlayersTable
-                    players={players}
-                    onUpdatePlayerName={handleUpdatePlayerName}
-                    onUpdateInitialBalance={handleUpdateInitialBalance}
-                    onAddTransaction={handleAddTransaction}
-                    onEditTransaction={handleEditTransaction}
-                    onDeleteTransaction={handleDeleteTransaction}
-                    onDeletePlayer={handleDeletePlayer}
-                    onCashOutPlayer={handleCashOutPlayer}
-                    isSessionEnded={isSessionEnded}
-                  />
-                )}
+                ) : null}
               </div>
 
               <aside className="lg:col-span-4 lg:sticky lg:top-8">
