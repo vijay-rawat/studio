@@ -4,51 +4,51 @@
 
 @layer base {
   :root {
-    /* Evergreen Fog Theme */
-    --background: 150 15% 12%; /* Very Dark Desaturated Green */
-    --foreground: 150 10% 85%; /* Light Grayish Green */
+    /* Slate & Amber Theme */
+    --background: 220 10% 18%; /* Dark Slate Gray */
+    --foreground: 30 15% 85%; /* Warm Off-White */
 
-    --card: 150 15% 16%;
-    --card-foreground: 150 10% 85%;
+    --card: 220 10% 22%; /* Slightly Lighter Slate */
+    --card-foreground: 30 15% 85%;
 
-    --popover: 150 15% 14%;
-    --popover-foreground: 150 10% 85%;
+    --popover: 220 10% 20%;
+    --popover-foreground: 30 15% 85%;
 
-    --primary: 130 50% 55%; /* Muted Forest Green */
-    --primary-foreground: 150 10% 90%; /* Light text for primary */
+    --primary: 35 85% 60%; /* Warm Amber/Orange */
+    --primary-foreground: 220 10% 10%; /* Dark text for primary buttons */
 
-    --secondary: 150 12% 25%;
-    --secondary-foreground: 150 8% 75%;
+    --secondary: 220 8% 30%;
+    --secondary-foreground: 30 10% 75%;
 
-    --muted: 150 12% 20%;
-    --muted-foreground: 150 8% 60%;
+    --muted: 220 8% 25%;
+    --muted-foreground: 30 10% 55%;
 
-    --accent: 40 70% 65%; /* Soft Gold/Yellow */
-    --accent-foreground: 40 100% 10%; /* Dark text on accent */
+    --accent: 180 30% 55%; /* Muted Teal/Aqua */
+    --accent-foreground: 0 0% 100%; /* Light text on accent */
 
     --destructive: 0 62.8% 50.6%; /* Saturated Red (Kept Standard) */
     --destructive-foreground: 0 0% 98%;
 
-    --border: 150 15% 24%;
-    --input: 150 15% 19%;
-    --input-foreground: 150 10% 85%; /* Added input-foreground */
+    --border: 220 10% 30%;
+    --input: 220 10% 26%;
+    --input-foreground: 30 15% 85%; /* Added input-foreground */
 
-    --ring: 130 50% 60%; /* Ring color, slightly brighter primary */
+    --ring: 35 85% 65%; /* Ring color, slightly brighter primary */
 
     --radius: 0.5rem;
 
-    /* Sidebar colors (Evergreen Fog) */
-    --sidebar-background: 150 15% 14%;
-    --sidebar-foreground: 150 10% 80%;
-    --sidebar-primary: 130 50% 55%;
-    --sidebar-primary-foreground: 150 10% 90%;
-    --sidebar-accent: 40 70% 65%;
-    --sidebar-accent-foreground: 40 100% 10%;
-    --sidebar-border: 150 15% 22%;
-    --sidebar-ring: 130 50% 60%;
+    /* Sidebar colors (Slate & Amber) */
+    --sidebar-background: 220 10% 16%; /* Slightly darker than main bg */
+    --sidebar-foreground: 30 15% 80%; /* Slightly less bright than main fg */
+    --sidebar-primary: 35 85% 60%; /* Main primary */
+    --sidebar-primary-foreground: 220 10% 10%; /* Main primary-foreground */
+    --sidebar-accent: 180 30% 55%; /* Main accent */
+    --sidebar-accent-foreground: 0 0% 100%; /* Main accent-foreground */
+    --sidebar-border: 220 10% 28%; /* Slightly darker than main border */
+    --sidebar-ring: 35 85% 65%; /* Main ring */
   }
 
-  .light { /* Optional Light theme, if ever needed - kept as is */
+  .light { /* Optional Light theme, if ever needed - kept as is from previous state */
     --background: 0 0% 98%;
     --foreground: 240 10% 3.9%;
 
@@ -58,8 +58,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
 
-    --primary: 130 45% 50%; /* Adjusted primary for light mode */
-    --primary-foreground: 0 0% 98%;
+    --primary: 35 75% 55%; /* Adjusted primary for light mode */
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 92%; /* Light gray */
     --secondary-foreground: 240 10% 10%;
@@ -67,8 +67,8 @@
     --muted: 0 0% 95%;
     --muted-foreground: 0 0% 45.1%;
 
-    --accent: 40 65% 60%; /* Adjusted accent for light mode */
-    --accent-foreground: 40 100% 5%;
+    --accent: 180 30% 50%; /* Adjusted accent for light mode */
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
@@ -76,18 +76,18 @@
     --border: 0 0% 90%;
     --input: 0 0% 94%;
     --input-foreground: 240 10% 3.9%;
-    --ring: 130 45% 55%;
+    --ring: 35 75% 60%;
     
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 97%;
     --sidebar-foreground: 240 10% 20%;
-    --sidebar-primary: 130 45% 50%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 40 65% 60%;
-    --sidebar-accent-foreground: 40 100% 5%;
+    --sidebar-primary: 35 75% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 180 30% 50%;
+    --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 0 0% 88%;
-    --sidebar-ring: 130 45% 55%;
+    --sidebar-ring: 35 75% 60%;
   }
 }
 
