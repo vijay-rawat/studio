@@ -2,13 +2,13 @@
 "use client";
 
 import type * as React from 'react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import type { Player, Transaction } from '@/types';
 import { AddPlayerForm } from '@/components/add-player-form';
-import { PlayerCard } from '@/components/player-card';
+import { PlayersTable } from '@/components/players-table'; // New component
 import { SummaryDisplay } from '@/components/summary-display';
 import { SessionEndedStatsDisplay } from '@/components/session-ended-stats-display';
-import { PiggyBank, Users, Landmark, Trash2, ShieldCheck, LogOut, CalendarOff } from 'lucide-react';
+import { ShieldCheck, Users, CalendarOff, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -125,7 +125,6 @@ export default function PokerTrackerPage() {
         ? { ...p, transactions: p.transactions.filter(tx => tx.id !== transactionId) } 
         : p
     ));
-    toast({ title: "Transaction Deleted", description: "The transaction has been removed." });
   };
 
   const handleDeletePlayer = (playerId: string) => {
@@ -137,15 +136,15 @@ export default function PokerTrackerPage() {
   };
 
   const handleCashOutPlayer = (playerId: string, cashOutAmountInput: number, departureStatusInput: 'left_early' | 'stayed_till_end' | 'stayed_till_end_auto') => {
-    if (isSessionEnded && departureStatusInput !== 'stayed_till_end_auto') { // Allow auto cash-out during session end
+    if (isSessionEnded && departureStatusInput !== 'stayed_till_end_auto') { 
       toast({ title: "Session Ended", description: "Cannot cash out players after the session has ended manually.", variant: "destructive" });
       return;
     }
+    
     const playerToCashOut = players.find(p => p.id === playerId);
     if (!playerToCashOut) return;
-
     const playerName = playerToCashOut.name;
-    
+
     setPlayers(prev => prev.map(p => {
       if (p.id === playerId) {
         return {
@@ -157,7 +156,8 @@ export default function PokerTrackerPage() {
       }
       return p;
     }));
-    if (departureStatusInput !== 'stayed_till_end_auto') { // Don't toast for auto cash-outs
+
+    if (departureStatusInput !== 'stayed_till_end_auto') {
         toast({ title: "Player Cashed Out", description: `${playerName} has cashed out.` });
     }
   };
@@ -174,7 +174,7 @@ export default function PokerTrackerPage() {
         return {
           ...p,
           cashedOutAmount: effectiveCashOutAmount,
-          departureStatus: 'stayed_till_end' as 'stayed_till_end', // Explicit cast
+          departureStatus: 'stayed_till_end' as 'stayed_till_end', 
           cashOutTimestamp: new Date().toISOString(),
         };
       }
@@ -300,22 +300,17 @@ export default function PokerTrackerPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-              {players.map(player => (
-                <PlayerCard
-                  key={player.id}
-                  player={player}
-                  onUpdatePlayerName={handleUpdatePlayerName}
-                  onUpdateInitialBalance={handleUpdateInitialBalance}
-                  onAddTransaction={handleAddTransaction}
-                  onEditTransaction={handleEditTransaction}
-                  onDeleteTransaction={handleDeleteTransaction}
-                  onDeletePlayer={handleDeletePlayer}
-                  onCashOutPlayer={handleCashOutPlayer}
-                  isSessionEnded={isSessionEnded}
-                />
-              ))}
-            </div>
+            <PlayersTable
+              players={players}
+              onUpdatePlayerName={handleUpdatePlayerName}
+              onUpdateInitialBalance={handleUpdateInitialBalance}
+              onAddTransaction={handleAddTransaction}
+              onEditTransaction={handleEditTransaction}
+              onDeleteTransaction={handleDeleteTransaction}
+              onDeletePlayer={handleDeletePlayer}
+              onCashOutPlayer={handleCashOutPlayer}
+              isSessionEnded={isSessionEnded}
+            />
           )}
         </div>
 
@@ -329,5 +324,4 @@ export default function PokerTrackerPage() {
     </div>
   );
 }
-
     
