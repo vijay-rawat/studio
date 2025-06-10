@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Trophy, TrendingDown, Users, ListChecks, BarChart3, UsersRound, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 
 interface SessionEndedStatsDisplayProps {
@@ -22,6 +23,8 @@ interface PlayerStat extends Player {
 
 export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayProps) {
   const [divisionEnabled, setDivisionEnabled] = useState(false);
+  const [showPikachuGif, setShowPikachuGif] = useState(false);
+  const [showPsyduckGif, setShowPsyduckGif] = useState(false);
 
   const playerStats: PlayerStat[] = useMemo(() => {
     return players.map(p => {
@@ -77,7 +80,11 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
         { (topWinner || topLoser) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {topWinner && (
-              <Card className="bg-emerald-600/10 border-emerald-500/40 shadow-lg">
+              <Card
+                className="relative bg-emerald-600/10 border-emerald-500/40 shadow-lg overflow-hidden group"
+                onMouseEnter={() => setShowPikachuGif(true)}
+                onMouseLeave={() => setShowPikachuGif(false)}
+              >
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-3">
                     <Trophy className="h-8 w-8 text-emerald-500" />
@@ -88,10 +95,27 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
                   <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{topWinner.name}</p>
                   <p className="text-xl text-emerald-500 dark:text-emerald-300">Net Profit: +{topWinner.displayNetResult.toFixed(2)} Rs.</p>
                 </CardContent>
+                {showPikachuGif && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-emerald-500/10 transition-opacity duration-300 ease-in-out">
+                    <Image
+                      src="https://placehold.co/200x200.png?text=Pikachu+GIF"
+                      alt="Pikachu celebrating"
+                      width={150}
+                      height={150}
+                      className="object-contain opacity-80"
+                      data-ai-hint="Pikachu thunderbolt"
+                      unoptimized // Important for GIFs with next/image
+                    />
+                  </div>
+                )}
               </Card>
             )}
             {topLoser && (
-              <Card className="bg-destructive/10 border-destructive/40 shadow-lg">
+              <Card
+                className="relative bg-destructive/10 border-destructive/40 shadow-lg overflow-hidden group"
+                onMouseEnter={() => setShowPsyduckGif(true)}
+                onMouseLeave={() => setShowPsyduckGif(false)}
+              >
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-3">
                     <TrendingDown className="h-8 w-8 text-destructive" />
@@ -102,6 +126,19 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
                   <p className="text-3xl font-bold text-destructive">{topLoser.name}</p>
                   <p className="text-xl text-destructive/90 dark:text-destructive/80">Net Loss: {topLoser.displayNetResult.toFixed(2)} Rs.</p>
                 </CardContent>
+                 {showPsyduckGif && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-destructive/10 transition-opacity duration-300 ease-in-out">
+                    <Image
+                      src="https://placehold.co/200x200.png?text=Psyduck+Sad+GIF"
+                      alt="Sad Psyduck"
+                      width={150}
+                      height={150}
+                      className="object-contain opacity-80"
+                      data-ai-hint="Psyduck sad confused"
+                      unoptimized // Important for GIFs with next/image
+                    />
+                  </div>
+                )}
               </Card>
             )}
           </div>
