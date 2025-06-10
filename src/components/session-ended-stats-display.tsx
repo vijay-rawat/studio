@@ -98,13 +98,13 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
                 {showPikachuGif && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-emerald-500/10 transition-opacity duration-300 ease-in-out">
                     <Image
-                      src="https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExdW1wdjQ4YWZjdXQ2MmV0NThpbjR0eDRhY3pkaTVmaTUzMWN6c2EwZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/W04FjXomStefP2K/giphy.gif"
-                      alt="Pikachu celebrating with electric waves"
+                      src="https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExbmY4cWV0NWN0ejR5cmZ5dzhzYm1vdjA5dGR2ZHhsaXV1aXc2MXR1cyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/kyLYrgT15w4Hq/giphy.gif"
+                      alt="Pikachu dancing happily"
                       width={150}
                       height={150}
                       className="object-contain opacity-80"
-                      data-ai-hint="Pikachu happy dance"
-                      unoptimized 
+                      data-ai-hint="Pikachu dance"
+                      unoptimized
                     />
                   </div>
                 )}
@@ -135,7 +135,7 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
                       height={150}
                       className="object-contain opacity-80"
                       data-ai-hint="Psyduck confused head"
-                      unoptimized 
+                      unoptimized
                     />
                   </div>
                 )}
@@ -143,7 +143,7 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
             )}
           </div>
         )}
-        
+
         <div className="space-y-6">
           <div className="flex items-center gap-2">
             <Users className="h-6 w-6 text-muted-foreground" />
@@ -180,8 +180,8 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
       </CardContent>
       {players.length > 0 && (
         <CardFooter className="flex-col sm:flex-row gap-2 pt-6 border-t border-border/30">
-            <Button 
-                onClick={() => setDivisionEnabled(true)} 
+            <Button
+                onClick={() => setDivisionEnabled(true)}
                 variant="outline"
                 className="w-full sm:w-auto"
                 disabled={divisionEnabled}
@@ -189,8 +189,8 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
                 <UsersRound className="mr-2 h-4 w-4" />
                 Split Pot (Halve Results)
             </Button>
-            <Button 
-                onClick={() => setDivisionEnabled(false)} 
+            <Button
+                onClick={() => setDivisionEnabled(false)}
                 variant="outline"
                 className="w-full sm:w-auto"
                 disabled={!divisionEnabled}
