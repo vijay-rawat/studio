@@ -98,7 +98,7 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
                 {showWinnerGif && (
                   <div className="absolute top-0 bottom-0 right-0 w-[150px] flex items-center justify-end p-2 pointer-events-none transition-opacity duration-300 ease-in-out">
                     <Image
-                      src="https://i.giphy.com/media/67ThRZlYBvTeA7QAHk/giphy.gif"
+                      src="https://i.giphy.com/media/gTURFoT4c7nK9AtP8Z/giphy.gif"
                       alt="Funny money rain celebration"
                       width={150}
                       height={150} 
@@ -208,4 +208,5 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
     
 
     
+
 
