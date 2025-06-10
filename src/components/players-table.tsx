@@ -82,11 +82,11 @@ export function PlayersTable({
 
   const getPlayerStatusText = (player: Player): string => {
     if (player.departureStatus === 'active' && !isSessionEnded) return "Active";
-    if (player.departureStatus === 'active' && isSessionEnded && player.cashedOutAmount !== undefined && player.cashOutTimestamp) return `Session Ended (Auto Cashed Out ${format(new Date(player.cashOutTimestamp), 'p')})`;
-    if (player.departureStatus === 'left_early' && player.cashOutTimestamp) return `Cashed Out (Left Early at ${format(new Date(player.cashOutTimestamp), 'p')})`;
-    if (player.departureStatus === 'stayed_till_end' && player.cashOutTimestamp) return `Cashed Out (Stayed till End at ${format(new Date(player.cashOutTimestamp), 'p')})`;
-    if (player.departureStatus === 'stayed_till_end_auto' && player.cashOutTimestamp) return `Session Ended (Auto Cashed Out ${format(new Date(player.cashOutTimestamp), 'p')})`; // Should be 'stayed_till_end' by this point
-    return "Finalized"; // Fallback for finalized states
+    if (player.departureStatus === 'active' && isSessionEnded && player.cashedOutAmount !== undefined && player.cashOutTimestamp) return `Ended (Auto @ ${format(new Date(player.cashOutTimestamp), 'p')})`;
+    if (player.departureStatus === 'left_early' && player.cashOutTimestamp) return `Left Early @ ${format(new Date(player.cashOutTimestamp), 'p')}`;
+    if (player.departureStatus === 'stayed_till_end' && player.cashOutTimestamp) return `Stayed End @ ${format(new Date(player.cashOutTimestamp), 'p')}`;
+    if (player.departureStatus === 'stayed_till_end_auto' && player.cashOutTimestamp) return `Ended (Auto @ ${format(new Date(player.cashOutTimestamp), 'p')})`; 
+    return "Finalized"; 
   };
 
   const playerForTransactionDialog = useMemo(() => {
@@ -119,8 +119,8 @@ export function PlayersTable({
                 <TableHead className="w-[200px] pl-6">Player Name</TableHead>
                 <TableHead className="text-right">Initial Balance (Rs.)</TableHead>
                 <TableHead className="text-right">Current/Final Balance (Rs.)</TableHead>
-                <TableHead>Status</TableHead>
                 <TableHead className="text-right pr-6 w-[80px]">Actions</TableHead>
+                <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -129,17 +129,17 @@ export function PlayersTable({
                 const isPlayerDisabledActions = (player.departureStatus !== 'active' && player.cashedOutAmount !== undefined) || isSessionEnded;
                 const isPlayerActiveForRebuy = player.departureStatus === 'active' && !isSessionEnded;
 
-                let statusIndicatorColor = "text-muted-foreground"; // Default
+                let statusIndicatorColor = "text-muted-foreground"; 
                 if (player.departureStatus === 'active' && !isSessionEnded) {
-                  statusIndicatorColor = "text-emerald-500"; // Green for active
+                  statusIndicatorColor = "text-emerald-500"; 
                 } else if (player.departureStatus === 'left_early') {
-                  statusIndicatorColor = "text-amber-500"; // Orange/Amber for left early
+                  statusIndicatorColor = "text-amber-500"; 
                 } else if (
                     player.departureStatus === 'stayed_till_end' || 
                     (isSessionEnded && player.cashedOutAmount !== undefined) ||
                     player.departureStatus === 'stayed_till_end_auto' 
                 ) {
-                  statusIndicatorColor = "text-blue-500"; // Blue for cashed out at end / session ended
+                  statusIndicatorColor = "text-blue-500"; 
                 }
                 
 
@@ -155,12 +155,6 @@ export function PlayersTable({
                       )}
                     >
                       {balanceInfo.displayBalance.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                       <div className="flex items-center gap-2">
-                        <Circle className={cn("h-2.5 w-2.5 shrink-0", statusIndicatorColor)} fill={statusIndicatorColor} />
-                        <span className="text-muted-foreground">{getPlayerStatusText(player)}</span>
-                      </div>
                     </TableCell>
                     <TableCell className="text-right pr-6">
                       <DropdownMenu>
@@ -188,7 +182,6 @@ export function PlayersTable({
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => setManagingTransactionsForPlayerId(player.id)}
-                            // Actions within ManageTransactionsDialog will be disabled based on player status/session.
                           >
                             <Coins className="mr-2 h-4 w-4" /> Manage Transactions
                           </DropdownMenuItem>
@@ -229,6 +222,12 @@ export function PlayersTable({
                           </AlertDialog>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                       <div className="flex items-center gap-2">
+                        <Circle className={cn("h-2.5 w-2.5 shrink-0", statusIndicatorColor)} fill={statusIndicatorColor} />
+                        <span className="text-muted-foreground whitespace-nowrap">{getPlayerStatusText(player)}</span>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -272,4 +271,3 @@ export function PlayersTable({
     </>
   );
 }
-
