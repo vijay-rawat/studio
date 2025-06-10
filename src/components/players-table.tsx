@@ -53,7 +53,7 @@ export function PlayersTable({
   isSessionEnded,
 }: PlayersTableProps) {
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
-  const [managingTransactionsForPlayer, setManagingTransactionsForPlayer] = useState<Player | null>(null);
+  const [managingTransactionsForPlayerId, setManagingTransactionsForPlayerId] = useState<string | null>(null);
   const [cashingOutPlayer, setCashingOutPlayer] = useState<Player | null>(null);
 
   const getPlayerBalanceInfo = (player: Player) => {
@@ -82,9 +82,24 @@ export function PlayersTable({
     if (player.departureStatus === 'active' && isSessionEnded && player.cashedOutAmount !== undefined && player.cashOutTimestamp) return `Session Ended (Auto Cashed Out ${format(new Date(player.cashOutTimestamp), 'p')})`;
     if (player.departureStatus === 'left_early' && player.cashOutTimestamp) return `Cashed Out (Left Early at ${format(new Date(player.cashOutTimestamp), 'p')})`;
     if (player.departureStatus === 'stayed_till_end' && player.cashOutTimestamp) return `Cashed Out (Stayed till End at ${format(new Date(player.cashOutTimestamp), 'p')})`;
-    if (player.departureStatus === 'stayed_till_end_auto' && player.cashOutTimestamp) return `Session Ended (Auto Cashed Out ${format(new Date(player.cashOutTimestamp), 'p')})`; // Handle this if needed
-    return "Status Unknown"; // Fallback
+    if (player.departureStatus === 'stayed_till_end_auto' && player.cashOutTimestamp) return `Session Ended (Auto Cashed Out ${format(new Date(player.cashOutTimestamp), 'p')})`;
+    return "Status Unknown";
   };
+
+  const playerForTransactionDialog = useMemo(() => {
+    if (!managingTransactionsForPlayerId) return null;
+    return players.find(p => p.id === managingTransactionsForPlayerId) || null;
+  }, [players, managingTransactionsForPlayerId]);
+
+  const playerForEditDialog = useMemo(() => {
+    if (!editingPlayer) return null;
+    return players.find(p => p.id === editingPlayer.id) || null;
+  }, [players, editingPlayer]);
+
+  const playerForCashOutDialog = useMemo(() => {
+     if (!cashingOutPlayer) return null;
+    return players.find(p => p.id === cashingOutPlayer.id) || null;
+  }, [players, cashingOutPlayer]);
 
 
   return (
@@ -108,10 +123,10 @@ export function PlayersTable({
             <TableBody>
               {players.map((player) => {
                 const balanceInfo = getPlayerBalanceInfo(player);
-                const isPlayerDisabled = (player.departureStatus !== 'active' && player.cashedOutAmount !== undefined) || isSessionEnded;
+                const isPlayerDisabledActions = (player.departureStatus !== 'active' && player.cashedOutAmount !== undefined) || isSessionEnded;
 
                 return (
-                  <TableRow key={player.id} className={cn(isPlayerDisabled && "opacity-70 bg-muted/30")}>
+                  <TableRow key={player.id} className={cn(isPlayerDisabledActions && "opacity-70 bg-muted/30")}>
                     <TableCell className="font-medium">{player.name}</TableCell>
                     <TableCell className="text-right">{player.initialBalance.toFixed(2)}</TableCell>
                     <TableCell
@@ -135,21 +150,19 @@ export function PlayersTable({
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             onClick={() => setEditingPlayer(player)}
-                            disabled={isPlayerDisabled}
+                            disabled={isPlayerDisabledActions}
                           >
                             <UserCog className="mr-2 h-4 w-4" /> Edit Player
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => setManagingTransactionsForPlayer(player)}
-                            // Allow managing transactions if player is active OR if session has ended (for viewing)
-                            // Disable ADDING/EDITING transactions within the dialog if session ended or player cashed out.
-                            disabled={(isPlayerDisabled && player.departureStatus !== 'active' && !isSessionEnded)}
+                            onClick={() => setManagingTransactionsForPlayerId(player.id)}
+                            disabled={isPlayerDisabledActions && player.departureStatus !== 'active' && !isSessionEnded } // Allow opening if session ended just to view transactions
                           >
                             <Coins className="mr-2 h-4 w-4" /> Manage Transactions
                           </DropdownMenuItem>
                            <DropdownMenuItem
                             onClick={() => setCashingOutPlayer(player)}
-                            disabled={isPlayerDisabled || (player.departureStatus !== 'active')}
+                            disabled={isPlayerDisabledActions || (player.departureStatus !== 'active')}
                           >
                             <LogOut className="mr-2 h-4 w-4" /> Cash Out
                           </DropdownMenuItem>
@@ -158,9 +171,7 @@ export function PlayersTable({
                             <AlertDialogTrigger asChild>
                                <DropdownMenuItem 
                                 className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                                // Allow deleting player if session is not ended, OR if session ended AND player has no transactions (e.g. added by mistake)
-                                // More complex logic: Don't allow deleting player if they have transactions AND game is over, as it would affect final settlement
-                                disabled={(isPlayerDisabled && player.transactions.length > 0) || (isSessionEnded && player.transactions.length > 0) }
+                                disabled={(isPlayerDisabledActions && player.transactions.length > 0) || (isSessionEnded && player.transactions.length > 0) }
                                 onSelect={(e) => e.preventDefault()} 
                                >
                                 <Trash2 className="mr-2 h-4 w-4" /> Delete Player
@@ -195,9 +206,9 @@ export function PlayersTable({
         </CardContent>
       </Card>
 
-      {editingPlayer && (
+      {playerForEditDialog && (
         <EditPlayerDialog
-          player={editingPlayer}
+          player={playerForEditDialog}
           isOpen={!!editingPlayer}
           onClose={() => setEditingPlayer(null)}
           onUpdatePlayerName={onUpdatePlayerName}
@@ -205,21 +216,21 @@ export function PlayersTable({
         />
       )}
 
-      {managingTransactionsForPlayer && (
+      {playerForTransactionDialog && (
         <ManageTransactionsDialog
-          player={managingTransactionsForPlayer}
-          isOpen={!!managingTransactionsForPlayer}
-          onClose={() => setManagingTransactionsForPlayer(null)}
+          player={playerForTransactionDialog}
+          isOpen={!!managingTransactionsForPlayerId}
+          onClose={() => setManagingTransactionsForPlayerId(null)}
           onAddTransaction={onAddTransaction}
           onEditTransaction={onEditTransaction}
           onDeleteTransaction={onDeleteTransaction}
-          isActionsDisabled={(managingTransactionsForPlayer.departureStatus !== 'active' && managingTransactionsForPlayer.cashedOutAmount !== undefined) || isSessionEnded}
+          isActionsDisabled={(playerForTransactionDialog.departureStatus !== 'active' && playerForTransactionDialog.cashedOutAmount !== undefined) || isSessionEnded}
         />
       )}
 
-      {cashingOutPlayer && (
+      {playerForCashOutDialog && (
         <CashOutPlayerDialog
-          player={cashingOutPlayer}
+          player={playerForCashOutDialog}
           isOpen={!!cashingOutPlayer}
           onClose={() => setCashingOutPlayer(null)}
           onCashOutPlayer={onCashOutPlayer}
@@ -229,3 +240,4 @@ export function PlayersTable({
     </>
   );
 }
+
