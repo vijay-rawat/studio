@@ -8,7 +8,7 @@ import { AddPlayerForm } from '@/components/add-player-form';
 import { PlayersTable } from '@/components/players-table';
 import { SummaryDisplay } from '@/components/summary-display';
 import { SessionEndedStatsDisplay } from '@/components/session-ended-stats-display';
-import { FullLedgerView } from '@/components/full-ledger-view'; // New Ledger View
+import { FullLedgerView } from '@/components/full-ledger-view';
 import { ShieldCheck, Users, CalendarOff, Trash2, Gamepad2, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Tabs
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 
 
@@ -34,6 +34,7 @@ export default function PokerTrackerPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [isClient, setIsClient] = useState(false);
   const [isSessionEnded, setIsSessionEnded] = useState(false);
+  const [currentYear, setCurrentYear] = useState<string>('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -46,6 +47,7 @@ export default function PokerTrackerPage() {
     if (storedSessionState) {
       setIsSessionEnded(JSON.parse(storedSessionState));
     }
+    setCurrentYear(new Date().getFullYear().toString());
   }, []);
 
   useEffect(() => {
@@ -191,7 +193,7 @@ export default function PokerTrackerPage() {
       if (p.departureStatus === 'active') {
         playersAutoCashedOut++;
         const liveBalance = p.initialBalance + p.transactions.reduce((sum, tx) => sum + tx.amount, 0);
-        const effectiveCashOutAmount = Math.max(0, liveBalance); // Chip value cannot be negative
+        const effectiveCashOutAmount = Math.max(0, liveBalance);
         return {
           ...p,
           cashedOutAmount: effectiveCashOutAmount,
@@ -365,7 +367,7 @@ export default function PokerTrackerPage() {
         </Tabs>
       </main>
       <footer className="text-center mt-12 py-8 border-t border-border/50">
-        <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} Suncity Poker Ledger. Gamble responsibly.</p>
+        <p className="text-sm text-muted-foreground">&copy; {currentYear} Suncity Poker Ledger. Gamble responsibly.</p>
       </footer>
     </div>
   );

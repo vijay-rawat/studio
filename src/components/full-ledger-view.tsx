@@ -93,17 +93,30 @@ export function FullLedgerView({
           <Accordion type="multiple" className="w-full">
             {sortedPlayers.map((player) => {
               const sortedTransactions = [...player.transactions].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-              const isPlayerFinalized = player.departureStatus !== 'active' || isSessionEnded;
+              const arePlayerActionsDisabled = player.departureStatus !== 'active' || isSessionEnded;
+              const liveBalance = player.initialBalance + player.transactions.reduce((sum, tx) => sum + tx.amount, 0);
 
               return (
                 <AccordionItem value={player.id} key={player.id}>
-                  <AccordionTrigger className="px-6 py-4 hover:bg-muted/50 transition-colors text-lg">
-                    <div className="flex items-center gap-3">
-                      <User className="h-5 w-5 text-primary/80" />
-                      <span className="font-medium">{player.name}</span>
-                      <Badge variant="secondary" className="font-normal">
-                        {sortedTransactions.length} transaction(s)
-                      </Badge>
+                  <AccordionTrigger className="px-6 py-4 hover:bg-muted/50 transition-colors text-lg w-full">
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-3">
+                        <User className="h-5 w-5 text-primary/80" />
+                        <span className="font-medium">{player.name}</span>
+                        <Badge variant="outline" className="font-normal text-xs px-1.5 py-0.5">
+                          {sortedTransactions.length} txs
+                        </Badge>
+                      </div>
+                      <span
+                        className={cn(
+                          "font-semibold text-base",
+                          liveBalance > 0 && "text-emerald-500",
+                          liveBalance < 0 && "text-destructive",
+                          liveBalance === 0 && "text-muted-foreground"
+                        )}
+                      >
+                        {liveBalance.toFixed(2)} Rs.
+                      </span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="bg-muted/20">
@@ -124,7 +137,7 @@ export function FullLedgerView({
                           </TableHeader>
                           <TableBody>
                             {sortedTransactions.map((tx) => (
-                              <TableRow key={tx.id} className={cn(isPlayerFinalized && "opacity-70")}>
+                              <TableRow key={tx.id} className={cn(arePlayerActionsDisabled && "opacity-70")}>
                                 <TableCell className="font-medium pl-4 sm:pl-6">{tx.description}</TableCell>
                                 <TableCell
                                   className={cn(
@@ -144,7 +157,7 @@ export function FullLedgerView({
                                       size="icon"
                                       className="h-7 w-7"
                                       onClick={() => handleOpenEditDialog(player, tx)}
-                                      disabled={isPlayerFinalized && player.departureStatus !== 'active'}
+                                      disabled={arePlayerActionsDisabled}
                                       aria-label="Edit transaction"
                                     >
                                       <Edit3 className="h-4 w-4" />
@@ -155,7 +168,7 @@ export function FullLedgerView({
                                           variant="ghost"
                                           size="icon"
                                           className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                          disabled={isPlayerFinalized && player.departureStatus !== 'active'}
+                                          disabled={arePlayerActionsDisabled}
                                           aria-label="Delete transaction"
                                         >
                                           <Trash2 className="h-4 w-4" />
