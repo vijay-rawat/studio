@@ -21,22 +21,17 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { Edit3, Trash2, PlusCircle, BookOpenText, User, Users, Info } from 'lucide-react';
+import { Edit3, Trash2, PlusCircle, BookOpenText, User, Users } from 'lucide-react'; // Removed Info
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { GlobalAddTransactionDialog } from './global-add-transaction-dialog';
 import { EditLedgerItemDialog } from './edit-ledger-item-dialog';
 import { Badge } from '@/components/ui/badge';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+// Removed Tooltip imports
 
 interface FullLedgerViewProps {
   players: Player[];
-  onAddTransaction: (playerId: string, amount: number, description: string) => void; // For bank transactions
+  onAddTransaction: (playerId: string, amount: number, description: string) => void;
   onEditTransaction: (playerId: string, transactionId: string, newAmount: number, newDescription: string) => void;
   onDeleteTransaction: (playerId: string, transactionId: string) => void;
   isSessionEnded: boolean;
@@ -53,10 +48,7 @@ export function FullLedgerView({
   const [editingLedgerItem, setEditingLedgerItem] = useState<{ player: Player; transaction: Transaction } | null>(null);
 
   const handleOpenEditDialog = (player: Player, transaction: Transaction) => {
-    if (transaction.transactionType && transaction.transactionType !== 'bank') {
-      // Potentially show a toast that P2P transactions can't be edited here.
-      // For now, the dialog itself will show the restriction.
-    }
+    // P2P check removed, dialog will handle general disable state
     setEditingLedgerItem({ player, transaction });
   };
 
@@ -91,7 +83,7 @@ export function FullLedgerView({
                 <BookOpenText className="mr-3 h-6 w-6 text-primary" />
                 Full Game Ledger
             </CardTitle>
-            <CardDescription>View all transactions, grouped by player. Expand a player to see their history. P2P transfers are immutable.</CardDescription>
+            <CardDescription>View all transactions, grouped by player. Expand a player to see their history.</CardDescription>
           </div>
           {!isSessionEnded && (
             <Button onClick={() => setIsAddTransactionDialogOpen(true)} size="sm">
@@ -100,7 +92,7 @@ export function FullLedgerView({
           )}
         </CardHeader>
         <CardContent className="p-0">
-          <TooltipProvider>
+          {/* TooltipProvider removed */}
           <Accordion type="multiple" className="w-full">
             {sortedPlayers.map((player) => {
               const sortedTransactions = [...player.transactions].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -147,27 +139,16 @@ export function FullLedgerView({
                           </TableHeader>
                           <TableBody>
                             {sortedTransactions.map((tx) => {
-                              const isP2P = tx.transactionType && tx.transactionType !== 'bank';
+                              // isP2P check removed
                               const arePlayerActionsDisabled = player.departureStatus !== 'active' || isSessionEnded;
-                              const canEditOrDelete = !arePlayerActionsDisabled && !isP2P;
-                               const p2pTooltip = isP2P ? (tx.transactionType === 'player_to_player_send' ? `Sent to ${tx.relatedPlayerName}` : `Received from ${tx.relatedPlayerName}`) : "Bank Transaction";
-
+                              const canEditOrDelete = !arePlayerActionsDisabled; // Simplified
 
                               return (
                               <TableRow key={tx.id} className={cn(arePlayerActionsDisabled && "opacity-70")}>
                                 <TableCell className="font-medium pl-4 sm:pl-6">
                                   <div className="flex items-center gap-1.5">
                                     {tx.description}
-                                    {isP2P && (
-                                      <Tooltip delayDuration={100}>
-                                        <TooltipTrigger asChild>
-                                          <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-primary cursor-help" />
-                                        </TooltipTrigger>
-                                        <TooltipContent side="top" className="text-xs">
-                                          <p>{p2pTooltip}</p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    )}
+                                    {/* P2P Info icon and Tooltip removed */}
                                   </div>
                                 </TableCell>
                                 <TableCell
@@ -207,9 +188,9 @@ export function FullLedgerView({
                                       </AlertDialogTrigger>
                                       <AlertDialogContent>
                                         <AlertDialogHeader>
-                                          <AlertDialogTitle>Delete Bank Transaction?</AlertDialogTitle>
+                                          <AlertDialogTitle>Delete Transaction?</AlertDialogTitle>
                                           <AlertDialogDescription>
-                                            Are you sure you want to delete this bank transaction for {player.name}: "{tx.description}" ({tx.amount} Rs.)? This cannot be undone.
+                                            Are you sure you want to delete this transaction for {player.name}: "{tx.description}" ({tx.amount} Rs.)? This cannot be undone.
                                           </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
@@ -236,7 +217,7 @@ export function FullLedgerView({
               );
             })}
           </Accordion>
-          </TooltipProvider>
+          {/* TooltipProvider removed */}
         </CardContent>
       </Card>
 
@@ -245,7 +226,7 @@ export function FullLedgerView({
           isOpen={isAddTransactionDialogOpen}
           onClose={() => setIsAddTransactionDialogOpen(false)}
           players={players.filter(p => p.departureStatus === 'active')}
-          onAddTransaction={onAddTransaction} // This dialog is for BANK transactions
+          onAddTransaction={onAddTransaction}
           isSessionEnded={isSessionEnded}
         />
       )}
@@ -256,7 +237,7 @@ export function FullLedgerView({
           onClose={() => setEditingLedgerItem(null)}
           player={editingLedgerItem.player}
           transaction={editingLedgerItem.transaction}
-          onEditTransaction={onEditTransaction} // Dialog handles if it's editable
+          onEditTransaction={onEditTransaction}
           isSessionEnded={isSessionEnded}
         />
       )}

@@ -1,13 +1,10 @@
 
 export interface Transaction {
   id: string;
-  amount: number; // Positive for money given to bank/player, negative for money taken from bank/player
+  amount: number; // Positive for money given to bank, negative for money taken from bank
   description: string;
   timestamp: string; // ISO string for date
-  transactionType?: 'bank' | 'player_to_player_send' | 'player_to_player_receive';
-  relatedPlayerId?: string;
-  relatedPlayerName?: string;
-  p2pGroupId?: string; // To link send and receive transactions
+  // P2P specific fields removed
 }
 
 export interface Player {

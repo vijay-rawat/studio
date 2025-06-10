@@ -111,7 +111,7 @@ export default function PokerTrackerPage() {
       amount,
       description,
       timestamp: new Date().toISOString(),
-      transactionType: 'bank',
+      // transactionType: 'bank', // Not needed anymore if it's the only type
     };
     setPlayers(prev => prev.map(p =>
       p.id === playerId
@@ -127,12 +127,6 @@ export default function PokerTrackerPage() {
     }
      const targetPlayer = players.find(p => p.id === playerId);
      if (!targetPlayer) return;
-
-     const transactionToEdit = targetPlayer.transactions.find(tx => tx.id === transactionId);
-     if (transactionToEdit?.transactionType !== 'bank' && transactionToEdit?.transactionType !== undefined) {
-         toast({ title: "Cannot Edit", description: "Player-to-player transfers cannot be edited directly.", variant: "destructive"});
-         return;
-     }
 
     if (targetPlayer.departureStatus !== 'active') {
       toast({ title: "Player Finalized", description: `Cannot edit transaction for ${targetPlayer.name} as they have already cashed out.`, variant: "destructive" });
@@ -160,12 +154,6 @@ export default function PokerTrackerPage() {
     }
      const targetPlayer = players.find(p => p.id === playerId);
      if (!targetPlayer) return;
-
-     const transactionToDelete = targetPlayer.transactions.find(tx => tx.id === transactionId);
-     if (transactionToDelete?.transactionType !== 'bank' && transactionToDelete?.transactionType !== undefined) {
-         toast({ title: "Cannot Delete", description: "Player-to-player transfers cannot be deleted directly.", variant: "destructive"});
-         return;
-     }
 
     if (targetPlayer.departureStatus !== 'active') {
       toast({ title: "Player Finalized", description: `Cannot delete transaction for ${targetPlayer.name} as they have already cashed out.`, variant: "destructive" });
@@ -212,68 +200,6 @@ export default function PokerTrackerPage() {
         toast({ title: "Player Cashed Out", description: `${playerName} has cashed out.` });
     }
   };
-
-  const handlePlayerToPlayerTransfer = (senderId: string, recipientId: string, amount: number, userDescription: string) => {
-    if (isSessionEnded) {
-      toast({ title: "Session Ended", description: "Cannot perform transfers after the session has ended.", variant: "destructive" });
-      return;
-    }
-
-    const sender = players.find(p => p.id === senderId);
-    const recipient = players.find(p => p.id === recipientId);
-
-    if (!sender || !recipient) {
-      toast({ title: "Error", description: "Sender or recipient not found.", variant: "destructive" });
-      return;
-    }
-    if (sender.departureStatus !== 'active' || recipient.departureStatus !== 'active') {
-      toast({ title: "Error", description: "Both sender and recipient must be active players.", variant: "destructive" });
-      return;
-    }
-    if (amount <= 0) {
-      toast({ title: "Error", description: "Transfer amount must be positive.", variant: "destructive" });
-      return;
-    }
-
-    const p2pGroupId = crypto.randomUUID();
-    const timestamp = new Date().toISOString();
-    const note = userDescription ? ` (Note: ${userDescription})` : '';
-
-    const senderTransaction: Transaction = {
-      id: crypto.randomUUID(),
-      amount: -amount, // Sender gives money, so it's a negative impact on their balance *relative to their own stack*
-      description: `Transferred ${amount.toFixed(2)} to ${recipient.name}.${note}`,
-      timestamp,
-      transactionType: 'player_to_player_send',
-      relatedPlayerId: recipient.id,
-      relatedPlayerName: recipient.name,
-      p2pGroupId,
-    };
-
-    const recipientTransaction: Transaction = {
-      id: crypto.randomUUID(),
-      amount: amount, // Recipient receives money
-      description: `Received ${amount.toFixed(2)} from ${sender.name}.${note}`,
-      timestamp,
-      transactionType: 'player_to_player_receive',
-      relatedPlayerId: sender.id,
-      relatedPlayerName: sender.name,
-      p2pGroupId,
-    };
-
-    setPlayers(prevPlayers => prevPlayers.map(p => {
-      if (p.id === senderId) {
-        return { ...p, transactions: [...p.transactions, senderTransaction] };
-      }
-      if (p.id === recipientId) {
-        return { ...p, transactions: [...p.transactions, recipientTransaction] };
-      }
-      return p;
-    }));
-
-    toast({ title: "Transfer Successful", description: `${sender.name} transferred ${amount.toFixed(2)} Rs. to ${recipient.name}.` });
-  };
-
 
   const handleEndSession = () => {
     let updatedPlayers = [...players];
@@ -434,7 +360,6 @@ export default function PokerTrackerPage() {
                     onDeleteTransaction={handleDeleteTransaction}
                     onDeletePlayer={handleDeletePlayer}
                     onCashOutPlayer={handleCashOutPlayer}
-                    onPlayerToPlayerTransfer={handlePlayerToPlayerTransfer}
                     isSessionEnded={isSessionEnded}
                   />
                 )}
@@ -449,9 +374,9 @@ export default function PokerTrackerPage() {
           <TabsContent value="full-ledger">
             <FullLedgerView
               players={players}
-              onAddTransaction={handleAddTransaction} // Bank transactions
-              onEditTransaction={handleEditTransaction} // Bank transactions
-              onDeleteTransaction={handleDeleteTransaction} // Bank transactions
+              onAddTransaction={handleAddTransaction}
+              onEditTransaction={handleEditTransaction}
+              onDeleteTransaction={handleDeleteTransaction}
               isSessionEnded={isSessionEnded}
             />
           </TabsContent>
