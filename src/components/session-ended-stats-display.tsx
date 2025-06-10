@@ -98,12 +98,12 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
                 {showWinnerGif && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-emerald-500/10 transition-opacity duration-300 ease-in-out">
                     <Image
-                      src="https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExd2JpZ2JkZ3N5ZzAxbDRoemJtbmZmdjk5MDh2eG05cnJsdG45ejl2OSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3oz9ZE2Oo9zRC/giphy.gif"
-                      alt="Happy celebration GIF"
+                      src="https://i.giphy.com/media/U3qYN8S0j3bpK/giphy.gif" // Pikachu electric attack
+                      alt="Pikachu using electric attack GIF"
                       width={150}
                       height={150}
                       className="object-contain opacity-80"
-                      data-ai-hint="celebration winner"
+                      data-ai-hint="Pikachu electric winner"
                       unoptimized
                     />
                   </div>
