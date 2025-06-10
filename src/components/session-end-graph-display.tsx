@@ -1,7 +1,7 @@
 
 "use client";
 
-import * as React from 'react';
+import React from 'react';
 import type { Player } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -171,7 +171,6 @@ export function SessionEndGraphDisplay({ players }: SessionEndGraphDisplayProps)
 
   if (!players.length) {
     return (
-      <React.Fragment>
       <Card className="w-full shadow-xl border-border/50 mt-8">
         <CardHeader>
           <CardTitle className="text-2xl flex items-center">
@@ -185,7 +184,6 @@ export function SessionEndGraphDisplay({ players }: SessionEndGraphDisplayProps)
           <p className="text-muted-foreground">No player data available to display graph.</p>
         </CardContent>
       </Card>
-      </React.Fragment>
     );
   }
 
@@ -197,11 +195,10 @@ export function SessionEndGraphDisplay({ players }: SessionEndGraphDisplayProps)
 
   if (noSufficientDataForGraph) {
      return (
-      <React.Fragment>
       <Card className="w-full shadow-xl border-border/50 mt-8">
         <CardHeader>
           <CardTitle className="text-2xl flex items-center">
-            <Minus className="mr-3 h-7 w-7 text-primary" /> {/* Changed icon */}
+            <Minus className="mr-3 h-7 w-7 text-primary" />
             Player Balance Over Time
           </CardTitle>
           <CardDescription>Line graph showing each player's bank balance throughout the session.</CardDescription>
@@ -212,7 +209,6 @@ export function SessionEndGraphDisplay({ players }: SessionEndGraphDisplayProps)
           <p className="text-sm text-muted-foreground/80">Graph will appear once players have transactions resulting in at least two time points.</p>
         </CardContent>
       </Card>
-      </React.Fragment>
     );
   }
 
@@ -239,62 +235,59 @@ export function SessionEndGraphDisplay({ players }: SessionEndGraphDisplayProps)
   };
 
   return (
-    <React.Fragment>
-      <Card className="w-full shadow-xl border-border/50 mt-8">
-        <CardHeader>
-          <CardTitle className="text-2xl flex items-center">
-            <TrendingUp className="mr-3 h-7 w-7 text-primary" />
-            Player Balance Over Time
-          </Title>
-          <CardDescription>Line graph showing each player's bank balance (initial + bank transactions) throughout the session.</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <ChartContainer config={chartConfig} className="min-h-[400px] w-full">
-             <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={processedChartData} margin={{ top: 5, right: 30, left: 0, bottom: 50 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border)/0.5)" />
-                <XAxis
-                  dataKey="formattedTime"
-                  stroke="hsl(var(--muted-foreground))"
-                  axisLine={{ stroke: "hsl(var(--border))" }}
-                  tick={{ fontSize: 12 }}
-                  angle={-45} // For better label readability if many points
-                  textAnchor="end"
-                  height={60} // Adjust height to accommodate angled labels
-                  interval="preserveStartEnd" // Show first and last tick, and some in between
+    <Card className="w-full shadow-xl border-border/50 mt-8">
+      <CardHeader>
+        <CardTitle className="text-2xl flex items-center">
+          <TrendingUp className="mr-3 h-7 w-7 text-primary" />
+          Player Balance Over Time
+        </CardTitle>
+        <CardDescription>Line graph showing each player's bank balance (initial + bank transactions) throughout the session.</CardDescription>
+      </CardHeader>
+      <CardContent className="pt-6">
+        <ChartContainer config={chartConfig} className="min-h-[400px] w-full">
+           <ResponsiveContainer width="100%" height={400}>
+            <LineChart data={processedChartData} margin={{ top: 5, right: 30, left: 0, bottom: 50 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border)/0.5)" />
+              <XAxis
+                dataKey="formattedTime"
+                stroke="hsl(var(--muted-foreground))"
+                axisLine={{ stroke: "hsl(var(--border))" }}
+                tick={{ fontSize: 12 }}
+                angle={-45} // For better label readability if many points
+                textAnchor="end"
+                height={60} // Adjust height to accommodate angled labels
+                interval="preserveStartEnd" // Show first and last tick, and some in between
+              />
+              <YAxis
+                stroke="hsl(var(--muted-foreground))"
+                axisLine={{ stroke: "hsl(var(--border))" }}
+                tick={{ fontSize: 12 }}
+                tickFormatter={(value) => `${value} Rs.`}
+                domain={yDomain} // Use calculated domain
+                allowDataOverflow={true} // Important if lines might go slightly out of calculated domain
+                width={80} // Give Y-axis enough space for labels
+              />
+              <ChartTooltip
+                cursor={{ strokeDasharray: '3 3', stroke: 'hsl(var(--muted-foreground)/0.3)' }}
+                content={<CustomTooltip />}
+              />
+              <ChartLegend content={<ChartLegendContent />} />
+              {players.map((player) => (
+                <Line
+                  key={player.id}
+                  type="monotone" // smooth line
+                  dataKey={player.name}
+                  stroke={chartConfig[player.name]?.color || "#8884d8"}
+                  strokeWidth={2.5}
+                  dot={{ r: 3, fill: chartConfig[player.name]?.color, strokeWidth:1, stroke: 'hsl(var(--background))' }} // Subtle dots
+                  activeDot={{ r: 6, strokeWidth:2, stroke: 'hsl(var(--background))' }} // Larger dot on hover
+                  connectNulls={true} // Crucial for connecting lines with missing data points
                 />
-                <YAxis
-                  stroke="hsl(var(--muted-foreground))"
-                  axisLine={{ stroke: "hsl(var(--border))" }}
-                  tick={{ fontSize: 12 }}
-                  tickFormatter={(value) => `${value} Rs.`}
-                  domain={yDomain} // Use calculated domain
-                  allowDataOverflow={true} // Important if lines might go slightly out of calculated domain
-                  width={80} // Give Y-axis enough space for labels
-                />
-                <ChartTooltip
-                  cursor={{ strokeDasharray: '3 3', stroke: 'hsl(var(--muted-foreground)/0.3)' }}
-                  content={<CustomTooltip />}
-                />
-                <ChartLegend content={<ChartLegendContent />} />
-                {players.map((player) => (
-                  <Line
-                    key={player.id}
-                    type="monotone" // smooth line
-                    dataKey={player.name}
-                    stroke={chartConfig[player.name]?.color || "#8884d8"}
-                    strokeWidth={2.5}
-                    dot={{ r: 3, fill: chartConfig[player.name]?.color, strokeWidth:1, stroke: 'hsl(var(--background))' }} // Subtle dots
-                    activeDot={{ r: 6, strokeWidth:2, stroke: 'hsl(var(--background))' }} // Larger dot on hover
-                    connectNulls={true} // Crucial for connecting lines with missing data points
-                  />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-          </ChartContainer>
-        </CardContent>
-      </Card>
-    </React.Fragment>
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartContainer>
+      </CardContent>
+    </Card>
   );
 }
-
