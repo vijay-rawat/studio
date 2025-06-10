@@ -4,48 +4,48 @@
 
 @layer base {
   :root {
-    /* Polished Steel & Cobalt Theme */
-    --background: 220 15% 18%; /* Dark Cool Slate */
-    --foreground: 210 10% 85%; /* Light Cool Gray */
+    /* Galactic Indigo Theme */
+    --background: 230 40% 15%; /* Deep Indigo */
+    --foreground: 220 25% 90%; /* Light Cool Gray/Silver */
 
-    --card: 220 15% 22%;
-    --card-foreground: 210 10% 85%;
+    --card: 230 40% 18%; /* Slightly Lighter Indigo */
+    --card-foreground: 220 25% 90%;
 
-    --popover: 220 15% 20%;
-    --popover-foreground: 210 10% 85%;
+    --popover: 230 40% 17%; /* Popover Indigo */
+    --popover-foreground: 220 25% 90%;
 
-    --primary: 215 70% 55%; /* Bright Cobalt Blue */
-    --primary-foreground: 210 10% 95%; /* Very Light Gray/White */
+    --primary: 210 80% 65%; /* Bright, Lighter Space Blue */
+    --primary-foreground: 230 40% 10%; /* Very Dark Indigo for text on primary */
 
-    --secondary: 220 12% 30%;
-    --secondary-foreground: 210 8% 75%;
+    --secondary: 230 30% 28%; /* Muted Indigo */
+    --secondary-foreground: 220 20% 80%; /* Lighter Muted Foreground */
 
-    --muted: 220 12% 25%;
-    --muted-foreground: 210 8% 55%;
+    --muted: 230 30% 22%; /* Darker Muted Indigo */
+    --muted-foreground: 220 20% 60%; /* Standard Muted Foreground */
 
-    --accent: 200 80% 70%; /* Bright, Light Cyan/Sky Blue */
-    --accent-foreground: 220 15% 10%; /* Dark text for this light accent */
+    --accent: 40 90% 60%; /* Bright Warm Orange/Gold */
+    --accent-foreground: 40 100% 10%; /* Dark brown/black for text on accent */
 
     --destructive: 0 62.8% 50.6%; /* Saturated Red (Kept Standard) */
     --destructive-foreground: 0 0% 98%;
 
-    --border: 220 15% 28%;
-    --input: 220 15% 24%;
-    --input-foreground: 210 10% 85%;
+    --border: 230 40% 25%; /* Indigo Border */
+    --input: 230 40% 20%; /* Indigo Input Background */
+    --input-foreground: 220 25% 90%; /* Light text for input */
 
-    --ring: 215 70% 60%; /* Ring color, slightly brighter primary */
+    --ring: 210 80% 70%; /* Ring color, slightly brighter primary */
 
     --radius: 0.5rem;
 
-    /* Sidebar colors (Polished Steel & Cobalt) */
-    --sidebar-background: 220 15% 16%; /* Slightly darker than main bg */
-    --sidebar-foreground: 210 10% 85%;
-    --sidebar-primary: 215 70% 55%; /* Main primary */
-    --sidebar-primary-foreground: 210 10% 95%; /* Main primary-foreground */
-    --sidebar-accent: 200 80% 70%; /* Main accent */
-    --sidebar-accent-foreground: 220 15% 10%; /* Main accent-foreground */
-    --sidebar-border: 220 15% 26%; /* Slightly darker than main border */
-    --sidebar-ring: 215 70% 60%; /* Main ring */
+    /* Sidebar colors (Galactic Indigo) */
+    --sidebar-background: 230 40% 13%; /* Slightly darker than main bg */
+    --sidebar-foreground: 220 25% 90%;
+    --sidebar-primary: 210 80% 65%; /* Main primary */
+    --sidebar-primary-foreground: 230 40% 10%; /* Main primary-foreground */
+    --sidebar-accent: 40 90% 60%; /* Main accent */
+    --sidebar-accent-foreground: 40 100% 10%; /* Main accent-foreground */
+    --sidebar-border: 230 40% 23%; /* Slightly darker than main border */
+    --sidebar-ring: 210 80% 70%; /* Main ring */
   }
 
   .light { /* Optional Light theme, if ever needed - kept as is from previous state */
@@ -67,7 +67,7 @@
     --muted: 0 0% 95%;
     --muted-foreground: 0 0% 45.1%;
 
-    --accent: 200 70% 60%; /* Adjusted accent for light mode */
+    --accent: 40 80% 55%; /* Adjusted accent for light mode */
     --accent-foreground: 240 10% 10%;
 
     --destructive: 0 84.2% 60.2%;
@@ -84,7 +84,7 @@
     --sidebar-foreground: 240 10% 20%;
     --sidebar-primary: 215 65% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 200 70% 60%;
+    --sidebar-accent: 40 80% 55%;
     --sidebar-accent-foreground: 240 10% 10%;
     --sidebar-border: 0 0% 88%;
     --sidebar-ring: 215 65% 50%;
