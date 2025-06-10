@@ -111,7 +111,6 @@ export default function PokerTrackerPage() {
       amount,
       description,
       timestamp: new Date().toISOString(),
-      // transactionType: 'bank', // Not needed anymore if it's the only type
     };
     setPlayers(prev => prev.map(p =>
       p.id === playerId
@@ -264,7 +263,7 @@ export default function PokerTrackerPage() {
         </div>
       </header>
 
-      <main className="container mx-auto py-8 px-4 md:px-0">
+      <main className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <Tabs defaultValue="game-view" className="w-full">
           <TabsList className="grid w-full grid-cols-2 md:w-auto md:inline-flex mb-6">
             <TabsTrigger value="game-view" className="text-base py-2.5">
