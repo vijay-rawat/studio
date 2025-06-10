@@ -106,7 +106,7 @@ export function ManageTransactionsDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md md:max-w-lg">
+      <DialogContent className="sm:max-w-md md:max-w-lg max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Coins className="h-5 w-5 text-primary" />
@@ -118,19 +118,19 @@ export function ManageTransactionsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="py-4 space-y-6">
+        <div className="py-4 space-y-6 overflow-y-auto flex-grow pr-1"> {/* Added overflow-y-auto and flex-grow */}
           <div>
             <h4 className="font-semibold mb-2 text-base text-foreground/90">Transaction History:</h4>
             {sortedTransactions.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4 text-center">No transactions recorded.</p>
             ) : (
-              <ScrollArea className="h-[200px] pr-3 -mr-3 border rounded-md p-2">
+              <ScrollArea className="h-[250px] pr-3 -mr-3 border rounded-md p-2"> {/* Increased height */}
                 <ul className="space-y-2">
                   {sortedTransactions.map((tx) => (
                     <li key={tx.id} className="text-sm flex justify-between items-center p-2.5 rounded-md border-border/30 bg-card hover:bg-muted/30 transition-colors group">
                       <div>
                         <span className="font-medium text-foreground/90">{tx.description}</span>
-                        <p className={`text-xs ${tx.amount < 0 ? 'text-destructive' : 'text-emerald-500'}`}>{tx.amount > 0 ? '+' : ''}{tx.amount} Rs.</p>
+                        <p className={`text-xs ${tx.amount < 0 ? 'text-destructive' : 'text-emerald-500'}`}>{tx.amount > 0 ? '+' : ''}{tx.amount.toFixed(2)} Rs.</p>
                         <p className="text-xs text-muted-foreground/70 pt-0.5">{format(new Date(tx.timestamp), "MMM d, p")}</p>
                       </div>
                       {!isActionsDisabled && (
@@ -148,7 +148,7 @@ export function ManageTransactionsDialog({
                               <AlertDialogTxHeader>
                                 <AlertDialogTxTitle>Delete Transaction?</AlertDialogTxTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete transaction: {tx.description} ({tx.amount} Rs.)? This cannot be undone.
+                                  Are you sure you want to delete transaction: {tx.description} ({tx.amount.toFixed(2)} Rs.)? This cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogTxHeader>
                               <AlertDialogTxFooter>
@@ -213,7 +213,7 @@ export function ManageTransactionsDialog({
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="mt-auto pt-4"> {/* Added mt-auto to push footer down */}
           <DialogClose asChild>
             <Button type="button" variant="outline" onClick={onClose}>Close</Button>
           </DialogClose>
