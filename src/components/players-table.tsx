@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { MoreHorizontal, Edit2, PlusCircle, LogOut, Trash2, Coins, UserCog } from 'lucide-react';
 import { EditPlayerDialog } from './edit-player-dialog';
@@ -78,10 +79,11 @@ export function PlayersTable({
 
   const getPlayerStatusText = (player: Player) => {
     if (player.departureStatus === 'active' && !isSessionEnded) return "Active";
-    if (player.departureStatus === 'active' && isSessionEnded && player.cashedOutAmount !== undefined) return `Session Ended (Auto Cashed Out ${format(new Date(player.cashOutTimestamp!), 'p')})`;
-    if (player.departureStatus === 'left_early') return `Cashed Out (Left Early at ${format(new Date(player.cashOutTimestamp!), 'p')})`;
-    if (player.departureStatus === 'stayed_till_end') return `Cashed Out (Stayed till End at ${format(new Date(player.cashOutTimestamp!), 'p')})`;
-    return "N/A";
+    if (player.departureStatus === 'active' && isSessionEnded && player.cashedOutAmount !== undefined && player.cashOutTimestamp) return `Session Ended (Auto Cashed Out ${format(new Date(player.cashOutTimestamp), 'p')})`;
+    if (player.departureStatus === 'left_early' && player.cashOutTimestamp) return `Cashed Out (Left Early at ${format(new Date(player.cashOutTimestamp), 'p')})`;
+    if (player.departureStatus === 'stayed_till_end' && player.cashOutTimestamp) return `Cashed Out (Stayed till End at ${format(new Date(player.cashOutTimestamp), 'p')})`;
+    if (player.departureStatus === 'stayed_till_end_auto' && player.cashOutTimestamp) return `Session Ended (Auto Cashed Out ${format(new Date(player.cashOutTimestamp), 'p')})`; // Handle this if needed
+    return "Status Unknown"; // Fallback
   };
 
 
@@ -139,7 +141,9 @@ export function PlayersTable({
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => setManagingTransactionsForPlayer(player)}
-                            disabled={isPlayerDisabled && player.departureStatus !== 'active'} 
+                            // Allow managing transactions if player is active OR if session has ended (for viewing)
+                            // Disable ADDING/EDITING transactions within the dialog if session ended or player cashed out.
+                            disabled={(isPlayerDisabled && player.departureStatus !== 'active' && !isSessionEnded)}
                           >
                             <Coins className="mr-2 h-4 w-4" /> Manage Transactions
                           </DropdownMenuItem>
@@ -154,8 +158,10 @@ export function PlayersTable({
                             <AlertDialogTrigger asChild>
                                <DropdownMenuItem 
                                 className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                                disabled={(player.departureStatus !== 'active' && player.transactions.length > 0 && !isSessionEnded) || (isSessionEnded && player.transactions.length > 0 && player.id === 'cannot_delete_if_session_ended_and_has_tx')}
-                                onSelect={(e) => e.preventDefault()} // Prevents DropdownMenu from closing
+                                // Allow deleting player if session is not ended, OR if session ended AND player has no transactions (e.g. added by mistake)
+                                // More complex logic: Don't allow deleting player if they have transactions AND game is over, as it would affect final settlement
+                                disabled={(isPlayerDisabled && player.transactions.length > 0) || (isSessionEnded && player.transactions.length > 0) }
+                                onSelect={(e) => e.preventDefault()} 
                                >
                                 <Trash2 className="mr-2 h-4 w-4" /> Delete Player
                               </DropdownMenuItem>
