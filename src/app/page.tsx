@@ -10,7 +10,7 @@ import { SummaryDisplay } from '@/components/summary-display';
 import { SessionEndedStatsDisplay } from '@/components/session-ended-stats-display';
 import { SessionEndGraphDisplay } from '@/components/session-end-graph-display'; 
 import { FullLedgerView } from '@/components/full-ledger-view';
-import { Users, CalendarOff, Trash2, Gamepad2, BookOpen } from 'lucide-react'; // Removed Crown
+import { Users, CalendarOff, Trash2, Gamepad2, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -252,7 +252,6 @@ export default function PokerTrackerPage() {
       <header className="py-8 border-b border-border/60 bg-card/20 shadow-md">
         <div className="container mx-auto text-center">
           <div className="inline-flex items-center gap-3 mb-2">
-            {/* Custom SVG logo for 9 and 10 of Clubs */}
             <svg
               width="40"
               height="40"
@@ -263,11 +262,13 @@ export default function PokerTrackerPage() {
             >
               <g id="card-9c" transform="translate(0, 2) rotate(-8 15 22.5)">
                 <rect x="0" y="0" width="30" height="45" rx="4" fill="hsl(var(--card))" stroke="hsl(var(--foreground))" strokeWidth="1.5"/>
+                <rect className="animated-card-border" x="0" y="0" width="30" height="45" rx="4"/>
                 <text x="5" y="14" fontFamily="Arial, Helvetica, sans-serif" fontSize="11" fontWeight="bold" fill="hsl(var(--foreground))">9</text>
                 <text x="5" y="28" fontFamily="Arial, Helvetica, sans-serif" fontSize="14" fill="currentColor">♣</text>
               </g>
               <g id="card-10c" transform="translate(13, 0) rotate(8 15 22.5)">
                 <rect x="0" y="0" width="30" height="45" rx="4" fill="hsl(var(--card))" stroke="hsl(var(--foreground))" strokeWidth="1.5"/>
+                <rect className="animated-card-border" x="0" y="0" width="30" height="45" rx="4"/>
                 <text x="3.5" y="14" fontFamily="Arial, Helvetica, sans-serif" fontSize="11" fontWeight="bold" fill="hsl(var(--foreground))">10</text>
                 <text x="5" y="28" fontFamily="Arial, Helvetica, sans-serif" fontSize="14" fill="currentColor">♣</text>
               </g>

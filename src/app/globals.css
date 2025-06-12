@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -113,5 +114,26 @@
     @apply bg-background text-foreground;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Animation for SVG card logo border */
+.animated-card-border {
+  fill: none;
+  stroke: hsl(50, 100%, 60%); /* Bright gold */
+  stroke-width: 2;
+  stroke-linecap: round;
+  /* Perimeter of 30x45 rect is (30+45)*2 = 150. Dash 10, Gap 140. */
+  stroke-dasharray: 10 140; 
+  animation: runLightAround 3s linear infinite;
+  filter: drop-shadow(0 0 2px hsl(50, 100%, 70%)); /* Subtle glow */
+}
+
+@keyframes runLightAround {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -150; /* Negative of the perimeter for a full loop */
   }
 }
