@@ -10,7 +10,7 @@ import { SummaryDisplay } from '@/components/summary-display';
 import { SessionEndedStatsDisplay } from '@/components/session-ended-stats-display';
 import { SessionEndGraphDisplay } from '@/components/session-end-graph-display'; 
 import { FullLedgerView } from '@/components/full-ledger-view';
-import { ShieldCheck, Users, CalendarOff, Trash2, Gamepad2, BookOpen } from 'lucide-react';
+import { Spade, Users, CalendarOff, Trash2, Gamepad2, BookOpen } from 'lucide-react'; // Changed ShieldCheck to Spade
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -252,7 +252,7 @@ export default function PokerTrackerPage() {
       <header className="py-8 border-b border-border/60 bg-card/20 shadow-md">
         <div className="container mx-auto text-center">
           <div className="inline-flex items-center gap-3 mb-2">
-            <ShieldCheck className="h-10 w-10 text-primary animate-pulse" />
+            <Spade className="h-10 w-10 text-primary" /> {/* Replaced ShieldCheck and removed animate-pulse */}
             <h1 className="text-4xl md:text-5xl font-bold">
               Suncity <span className="text-primary">Poker</span> Ledger
             </h1>
