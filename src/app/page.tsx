@@ -8,7 +8,7 @@ import { AddPlayerForm } from '@/components/add-player-form';
 import { PlayersTable } from '@/components/players-table';
 import { SummaryDisplay } from '@/components/summary-display';
 import { SessionEndedStatsDisplay } from '@/components/session-ended-stats-display';
-import { SessionEndGraphDisplay } from '@/components/session-end-graph-display'; 
+import { SessionEndGraphDisplay } from '@/components/session-end-graph-display';
 import { FullLedgerView } from '@/components/full-ledger-view';
 import { Users, CalendarOff, Trash2, Gamepad2, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -209,7 +209,7 @@ export default function PokerTrackerPage() {
       if (p.departureStatus === 'active') {
         playersAutoCashedOut++;
         const liveBalance = p.initialBalance + p.transactions.reduce((sum, tx) => sum + tx.amount, 0);
-        const effectiveCashOutAmount = Math.max(0, liveBalance); 
+        const effectiveCashOutAmount = Math.max(0, liveBalance);
         return {
           ...p,
           cashedOutAmount: effectiveCashOutAmount,
@@ -258,7 +258,7 @@ export default function PokerTrackerPage() {
               viewBox="-2 -5 50 50"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
-              className="h-10 w-10 text-primary"
+              className="h-10 w-10 text-primary translate-x-3 md:translate-x-0"
             >
               <g id="card-9c" transform="translate(0, 2) rotate(-8 15 22.5)">
                 <rect x="0" y="0" width="30" height="45" rx="4" fill="hsl(var(--card))" stroke="hsl(var(--foreground))" strokeWidth="1.5"/>
@@ -287,14 +287,14 @@ export default function PokerTrackerPage() {
       <main className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <Tabs defaultValue="game-view" className="w-full">
           <TabsList className="inline-flex h-auto items-center justify-center rounded-full bg-muted/50 p-1.5 mb-8 shadow-sm ring-1 ring-border/30">
-            <TabsTrigger 
-              value="game-view" 
+            <TabsTrigger
+              value="game-view"
               className="px-6 py-2 text-sm font-medium text-muted-foreground rounded-full transition-colors duration-200 ease-out focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:text-foreground focus-visible:text-foreground"
             >
               <Gamepad2 className="mr-2 h-5 w-5" /> Game View
             </TabsTrigger>
-            <TabsTrigger 
-              value="full-ledger" 
+            <TabsTrigger
+              value="full-ledger"
               className="px-6 py-2 text-sm font-medium text-muted-foreground rounded-full transition-colors duration-200 ease-out focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:text-foreground focus-visible:text-foreground"
             >
               <BookOpen className="mr-2 h-5 w-5" /> Full Ledger
@@ -376,7 +376,7 @@ export default function PokerTrackerPage() {
                     isSessionEnded={isSessionEnded}
                   />
                 )}
-                
+
                 {players.length === 0 && !isSessionEnded ? (
                   <Card className="mt-8 shadow-xl border-border/50">
                     <CardContent className="p-10 text-center flex flex-col items-center justify-center min-h-[200px]">
