@@ -7,16 +7,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { BrainCircuit, Lightbulb, AlertTriangle, PartyPopper, Scale, Trash2, Undo2 } from 'lucide-react';
+import { BrainCircuit, Lightbulb, AlertTriangle, PartyPopper, Scale, Trash2, Undo2, UserPlus, Trophy } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { analyzePokerHand, type AnalyzePokerHandInput, type AnalyzePokerHandOutput } from '@/ai/flows/analyze-poker-hand-flow';
 import { cn } from '@/lib/utils';
-import { CardSelector, type HandSection } from './card-selector';
+import { CardSelector } from './card-selector';
 import { CardSlot } from './card-slot';
+
+type HandSection = 'myHand' | 'communityCards' | `opponentHand${number}`;
 
 
 // A simple component to render a poker card with suit and rank
-const PokerCard = ({ card, isHighlighted, isOpponent = false }: { card: string; isHighlighted?: boolean, isOpponent?: boolean }) => {
+const PokerCard = ({ card, isHighlighted }: { card: string; isHighlighted?: boolean }) => {
   const suitSymbols: { [key: string]: string } = { S: '♠', D: '♦', H: '♥', C: '♣' };
   const suitColors: { [key: string]: string } = { S: 'text-foreground', D: 'text-blue-500', H: 'text-red-500', C: 'text-green-500' };
   
@@ -25,7 +27,7 @@ const PokerCard = ({ card, isHighlighted, isOpponent = false }: { card: string; 
 
   return (
     <motion.div
-      layoutId={`card-${card}-${isOpponent}`}
+      layoutId={`card-${card}`}
       className={cn(
         "relative flex h-24 w-16 select-none flex-col justify-between rounded-lg border-2 bg-card p-1 text-center font-bold shadow-md transition-all duration-300",
         isHighlighted ? 'border-primary shadow-primary/40 scale-105' : 'border-border'
@@ -40,7 +42,7 @@ const PokerCard = ({ card, isHighlighted, isOpponent = false }: { card: string; 
 
 export function HandAnalyzerView() {
   const [myHand, setMyHand] = useState<string[]>([]);
-  const [opponentHand, setOpponentHand] = useState<string[]>([]);
+  const [opponentHands, setOpponentHands] = useState<string[][]>([[]]);
   const [communityCards, setCommunityCards] = useState<string[]>([]);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -49,52 +51,65 @@ export function HandAnalyzerView() {
   const { toast } = useToast();
   
   const allSelectedCards = useMemo(() => {
-    return new Set([...myHand, ...opponentHand, ...communityCards]);
-  }, [myHand, opponentHand, communityCards]);
+    return new Set([...myHand, ...communityCards, ...opponentHands.flat()]);
+  }, [myHand, communityCards, opponentHands]);
 
-  const handleCardSelect = (card: string, section: HandSection, index: number) => {
-    const setters = {
-      myHand: setMyHand,
-      opponentHand: setOpponentHand,
-      communityCards: setCommunityCards
-    };
-    
-    setters[section](prev => {
-      const newHand = [...prev];
-      newHand[index] = card;
-      return newHand;
-    });
-  }
+  const handleCardSelect = (card: string, section: HandSection, index: number, opponentIndex?: number) => {
+    if (section === 'myHand') {
+      setMyHand(prev => { const newHand = [...prev]; newHand[index] = card; return newHand; });
+    } else if (section === 'communityCards') {
+      setCommunityCards(prev => { const newHand = [...prev]; newHand[index] = card; return newHand; });
+    } else if (section.startsWith('opponentHand') && opponentIndex !== undefined) {
+      setOpponentHands(prev => {
+        const newOpponentHands = [...prev];
+        const newHand = [...(newOpponentHands[opponentIndex] || [])];
+        newHand[index] = card;
+        newOpponentHands[opponentIndex] = newHand;
+        return newOpponentHands;
+      });
+    }
+  };
 
-  const handleClearSection = (section: HandSection) => {
-    const setters = {
-      myHand: setMyHand,
-      opponentHand: setOpponentHand,
-      communityCards: setCommunityCards
-    };
-    setters[section]([]);
+  const handleClearSection = (section: HandSection, opponentIndex?: number) => {
+     if (section === 'myHand') {
+      setMyHand([]);
+    } else if (section === 'communityCards') {
+      setCommunityCards([]);
+    } else if (section.startsWith('opponentHand') && opponentIndex !== undefined) {
+       setOpponentHands(prev => prev.filter((_, i) => i !== opponentIndex));
+    }
     setAnalysisResult(null);
-  }
+  };
+
+  const handleAddOpponent = () => {
+    if (opponentHands.length < 5) {
+      setOpponentHands(prev => [...prev, []]);
+    } else {
+      toast({ title: "Max Opponents", description: "You can add a maximum of 5 opponents.", variant: "destructive" });
+    }
+  };
   
   const handleClearAll = () => {
     setMyHand([]);
-    setOpponentHand([]);
+    setOpponentHands([[]]);
     setCommunityCards([]);
     setAnalysisResult(null);
     setError(null);
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setAnalysisResult(null);
 
+    const validOpponentHands = opponentHands.filter(hand => hand.length === 2);
+
     if (myHand.length !== 2) {
       toast({ title: "Invalid Input", description: "Your hand must contain exactly 2 cards.", variant: "destructive" });
       return;
     }
-    if (opponentHand.length !== 2) {
-      toast({ title: "Invalid Input", description: "Opponent's hand must contain exactly 2 cards.", variant: "destructive" });
+    if (validOpponentHands.length === 0) {
+      toast({ title: "Invalid Input", description: "At least one opponent must have exactly 2 cards.", variant: "destructive" });
       return;
     }
     if (communityCards.length < 3 || communityCards.length > 5) {
@@ -104,7 +119,7 @@ export function HandAnalyzerView() {
 
     const input: AnalyzePokerHandInput = {
       myHand: myHand,
-      opponentHand: opponentHand,
+      opponentHands: validOpponentHands,
       communityCards: communityCards,
     };
 
@@ -123,30 +138,34 @@ export function HandAnalyzerView() {
   
   const getResultIcon = () => {
     if (!analysisResult) return null;
-    switch (analysisResult.winner) {
-      case 'You': return <PartyPopper className="h-8 w-8 text-emerald-500" />;
-      case 'Opponent': return <PartyPopper className="h-8 w-8 text-destructive" />;
-      case 'Split pot': return <Scale className="h-8 w-8 text-amber-500" />;
+    if (analysisResult.winner.toLowerCase().includes('split')) {
+       return <Scale className="h-8 w-8 text-amber-500" />;
     }
+    if (analysisResult.winner === 'You') {
+        return <Trophy className="h-8 w-8 text-emerald-500" />;
+    }
+    return <PartyPopper className="h-8 w-8 text-destructive" />;
   };
   
   const getResultColorClass = () => {
     if (!analysisResult) return '';
-    switch (analysisResult.winner) {
-      case 'You': return 'border-emerald-500/50 bg-emerald-950/20';
-      case 'Opponent': return 'border-destructive/50 bg-destructive/10';
-      case 'Split pot': return 'border-amber-500/50 bg-amber-950/20';
+    if (analysisResult.winner.toLowerCase().includes('split')) {
+      return 'border-amber-500/50 bg-amber-950/20';
     }
+     if (analysisResult.winner === 'You') {
+      return 'border-emerald-500/50 bg-emerald-950/20';
+    }
+    return 'border-destructive/50 bg-destructive/10';
   };
 
-  const renderCardSlots = (section: HandSection, count: number, cards: string[]) => {
+  const renderCardSlots = (section: HandSection, count: number, cards: string[], opponentIndex?: number) => {
     const slots = [];
     for (let i = 0; i < count; i++) {
       slots.push(
         <CardSelector 
-          key={`${section}-${i}`} 
+          key={`${section}-${opponentIndex !== undefined ? opponentIndex : ''}-${i}`} 
           selectedCard={cards[i]} 
-          onCardSelect={(card) => handleCardSelect(card, section, i)}
+          onCardSelect={(card) => handleCardSelect(card, section, i, opponentIndex)}
           allSelectedCards={allSelectedCards}
         >
           <CardSlot card={cards[i]} />
@@ -156,7 +175,7 @@ export function HandAnalyzerView() {
     return slots;
   };
   
-  const isSubmitDisabled = isLoading || myHand.length !== 2 || opponentHand.length !== 2 || communityCards.length < 3;
+  const isSubmitDisabled = isLoading || myHand.length !== 2 || opponentHands.every(h => h.length !== 2) || communityCards.length < 3;
 
   return (
     <div className="space-y-8">
@@ -165,8 +184,8 @@ export function HandAnalyzerView() {
           <div className="flex items-center gap-3">
             <BrainCircuit className="h-8 w-8 text-primary" />
             <div>
-              <CardTitle className="text-3xl">AI Hand Analyzer</CardTitle>
-              <CardDescription>Click the slots to select cards for each hand and the community board, then click Analyze.</CardDescription>
+              <CardTitle className="text-3xl">AI Multi-Hand Analyzer</CardTitle>
+              <CardDescription>Select cards for all hands and the board to see who wins a multi-way pot.</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -175,27 +194,31 @@ export function HandAnalyzerView() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <h3 className="font-semibold text-lg">Your Hand</h3>
-                  <Button variant="ghost" size="sm" onClick={() => handleClearSection('myHand')} disabled={myHand.length === 0}><Trash2 className="h-4 w-4 mr-2"/>Clear</Button>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   {renderCardSlots('myHand', 2, myHand)}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                 <div className="flex justify-between items-center">
-                  <h3 className="font-semibold text-lg">Opponent's Hand</h3>
-                  <Button variant="ghost" size="sm" onClick={() => handleClearSection('opponentHand')} disabled={opponentHand.length === 0}><Trash2 className="h-4 w-4 mr-2"/>Clear</Button>
+              {opponentHands.map((hand, index) => (
+                <div key={`opponent-${index}`} className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-semibold text-lg">Opponent {index + 1}'s Hand</h3>
+                    <Button variant="ghost" size="sm" onClick={() => handleClearSection('opponentHand', index)}><Trash2 className="h-4 w-4 mr-2"/>Remove</Button>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    {renderCardSlots(`opponentHand${index}` as HandSection, 2, hand, index)}
+                  </div>
                 </div>
-                <div className="flex gap-2 flex-wrap">
-                   {renderCardSlots('opponentHand', 2, opponentHand)}
-                </div>
-              </div>
+              ))}
               
-               <div className="space-y-2">
+              <Button variant="outline" size="sm" onClick={handleAddOpponent} disabled={opponentHands.length >= 5}>
+                <UserPlus className="h-4 w-4 mr-2" /> Add Opponent
+              </Button>
+              
+               <div className="space-y-2 pt-4">
                 <div className="flex justify-between items-center">
                     <h3 className="font-semibold text-lg">Community Cards (Flop, Turn, River)</h3>
-                    <Button variant="ghost" size="sm" onClick={() => handleClearSection('communityCards')} disabled={communityCards.length === 0}><Trash2 className="h-4 w-4 mr-2"/>Clear</Button>
                   </div>
                 <div className="flex gap-2 flex-wrap">
                    {renderCardSlots('communityCards', 5, communityCards)}
@@ -240,26 +263,28 @@ export function HandAnalyzerView() {
                 <div className="flex items-center gap-3">
                     {getResultIcon()}
                     <div>
-                        <CardTitle className="text-3xl">Result: {analysisResult.winner} Wins!</CardTitle>
+                        <CardTitle className="text-3xl">Result: {analysisResult.winner}</CardTitle>
                         <CardDescription>Based on the best 5-card hands available to each player.</CardDescription>
                     </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-lg">Your Hand ({analysisResult.yourBestHand.handName})</h3>
-                  <div className="flex gap-2 flex-wrap bg-muted/30 p-4 rounded-lg">
-                    {myHand.map(c => <PokerCard key={`res-my-${c}`} card={c} isHighlighted={analysisResult.yourBestHand.handCards.includes(c)} />)}
-                  </div>
-
-                  <h3 className="font-semibold text-lg">Opponent's Hand ({analysisResult.opponentBestHand.handName})</h3>
-                   <div className="flex gap-2 flex-wrap bg-muted/30 p-4 rounded-lg">
-                    {opponentHand.map(c => <PokerCard key={`res-opp-${c}`} card={c} isHighlighted={analysisResult.opponentBestHand.handCards.includes(c)} isOpponent={true} />)}
-                  </div>
+                   {analysisResult.rankedResults.map(result => {
+                      const allPlayerHoleCards = result.playerId === 'You' ? myHand : opponentHands[parseInt(result.playerId.split(' ')[1]) - 1] || [];
+                      return (
+                         <div key={result.playerId}>
+                            <h3 className="font-semibold text-lg">{result.playerId}'s Hand ({result.handName})</h3>
+                            <div className="flex gap-2 flex-wrap bg-muted/30 p-4 rounded-lg">
+                                {allPlayerHoleCards.map(c => <PokerCard key={`res-${result.playerId}-${c}`} card={c} isHighlighted={result.handCards.includes(c)} />)}
+                            </div>
+                         </div>
+                      );
+                   })}
 
                   <h3 className="font-semibold text-lg">Community Cards</h3>
                   <div className="flex gap-2 flex-wrap bg-muted/30 p-4 rounded-lg">
-                    {communityCards.map(c => <PokerCard key={`res-comm-${c}`} card={c} isHighlighted={analysisResult.yourBestHand.handCards.includes(c) || analysisResult.opponentBestHand.handCards.includes(c)} />)}
+                    {communityCards.map(c => <PokerCard key={`res-comm-${c}`} card={c} isHighlighted={analysisResult.rankedResults.some(r => r.handCards.includes(c))} />)}
                   </div>
                 </div>
                 
