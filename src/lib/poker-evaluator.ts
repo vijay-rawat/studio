@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview A local, rule-based Texas Hold'em hand evaluator.
  * This file contains the logic to determine the winning hand(s) from a set of player hands and community cards.
@@ -29,7 +30,6 @@ export interface PokerHandResult {
 // --- Constants ---
 
 const RANKS = '23456789TJQKA';
-const SUITS = 'CDHS';
 const HAND_NAMES = [
   'High Card',
   'One Pair',
@@ -58,14 +58,17 @@ export function evaluatePokerHands(input: PokerHandInput): PokerHandResult {
 
   const results: PlayerHandResult[] = allPlayerHoleCards.map(player => {
     const all7Cards = [...player.cards, ...input.communityCards];
+    if (new Set(all7Cards).size !== all7Cards.length) {
+      throw new Error("Duplicate cards detected in input.");
+    }
     return evaluateBest5CardHand(player.id, all7Cards);
   });
 
-  results.sort(compareHandResults);
+  const rankedResults = [...results].sort((a, b) => compareHandResults(b, a));
 
-  const winnerResults = findWinners(results);
+  const winnerResults = findWinners(rankedResults);
 
-  return formatOutput(results, winnerResults);
+  return formatOutput(rankedResults, winnerResults);
 }
 
 /**
@@ -76,11 +79,11 @@ export function evaluatePokerHands(input: PokerHandInput): PokerHandResult {
  */
 function evaluateBest5CardHand(playerId: string, all7Cards: string[]): PlayerHandResult {
   const combinations = getCombinations(all7Cards, 5);
-  let bestHand: PlayerHandResult | null = null;
+  let bestHand: Omit<PlayerHandResult, 'playerId'> | null = null;
 
   for (const combo of combinations) {
     const currentHand = evaluate5CardHand(combo);
-    if (!bestHand || compareHandResults(currentHand, bestHand) > 0) {
+    if (!bestHand || compareHandResults(currentHand as PlayerHandResult, bestHand as PlayerHandResult) > 0) {
       bestHand = currentHand;
     }
   }
@@ -89,8 +92,7 @@ function evaluateBest5CardHand(playerId: string, all7Cards: string[]): PlayerHan
     throw new Error('Could not determine best hand.');
   }
   
-  bestHand.playerId = playerId;
-  return bestHand;
+  return { ...bestHand, playerId };
 }
 
 /**
@@ -104,86 +106,38 @@ function evaluate5CardHand(hand: string[]): Omit<PlayerHandResult, 'playerId'> {
   const suits = hand.map(c => c[1]);
 
   const isFlush = new Set(suits).size === 1;
-  const isStraight = values.every((v, i) => i === 0 || v === values[i - 1] - 1) ||
-                     JSON.stringify(values) === '[12, 3, 2, 1, 0]'; // Ace-low straight A,5,4,3,2
+  const isWheel = JSON.stringify(values) === '[12, 3, 2, 1, 0]'; // Ace-low straight: A, 5, 4, 3, 2
+  const isStraight = values.every((v, i) => i === 0 || v === values[i - 1] - 1) || isWheel;
 
   const counts: { [key: number]: number } = values.reduce((acc, v) => ({ ...acc, [v]: (acc[v] || 0) + 1 }), {} as any);
-  const groups = Object.values(counts).sort((a, b) => b - a);
-  const groupKeys = Object.keys(counts).map(Number).sort((a,b) => counts[b] - counts[a] || b - a);
-
+  
+  // Sort card ranks by their frequency, then by their value (highest first)
+  const groupKeys = Object.keys(counts).map(Number).sort((a,b) => {
+    const countDiff = counts[b] - counts[a];
+    if (countDiff !== 0) return countDiff;
+    return b - a;
+  });
 
   if (isStraight && isFlush) {
-    return {
-      handName: values[0] === RANKS.indexOf('A') ? HAND_NAMES[9] : HAND_NAMES[8],
-      handRank: values[0] === RANKS.indexOf('A') ? 9 : 8,
-      handValue: values,
-      handCards: hand
-    };
+    const handRank = isWheel ? 8 : (values[0] === RANKS.indexOf('A') ? 9 : 8);
+    const handName = handRank === 9 ? HAND_NAMES[9] : HAND_NAMES[8];
+    const handValue = isWheel ? [3, 2, 1, 0, -1] : values; // Treat Ace as low for 'wheel' comparison
+    return { handName, handRank, handValue, handCards: hand };
   }
-  if (groups[0] === 4) {
-    return {
-      handName: HAND_NAMES[7],
-      handRank: 7,
-      handValue: groupKeys,
-      handCards: hand
-    };
-  }
-  if (groups[0] === 3 && groups[1] === 2) {
-    return {
-      handName: HAND_NAMES[6],
-      handRank: 6,
-      handValue: groupKeys,
-      handCards: hand
-    };
-  }
-  if (isFlush) {
-    return {
-      handName: HAND_NAMES[5],
-      handRank: 5,
-      handValue: values,
-      handCards: hand
-    };
-  }
+  if (isFlush) return { handName: HAND_NAMES[5], handRank: 5, handValue: values, handCards: hand };
   if (isStraight) {
-    // Handle Ace-low straight value for comparison
-    const straightValue = JSON.stringify(values) === '[12, 3, 2, 1, 0]' ? [3,2,1,0,-1] : values;
-    return {
-      handName: HAND_NAMES[4],
-      handRank: 4,
-      handValue: straightValue,
-      handCards: hand
-    };
+    const handValue = isWheel ? [3, 2, 1, 0, -1] : values;
+    return { handName: HAND_NAMES[4], handRank: 4, handValue, handCards: hand };
   }
-  if (groups[0] === 3) {
-    return {
-      handName: HAND_NAMES[3],
-      handRank: 3,
-      handValue: groupKeys,
-      handCards: hand
-    };
-  }
-  if (groups[0] === 2 && groups[1] === 2) {
-    return {
-      handName: HAND_NAMES[2],
-      handRank: 2,
-      handValue: groupKeys,
-      handCards: hand
-    };
-  }
-  if (groups[0] === 2) {
-    return {
-      handName: HAND_NAMES[1],
-      handRank: 1,
-      handValue: groupKeys,
-      handCards: hand
-    };
-  }
-  return {
-    handName: HAND_NAMES[0],
-    handRank: 0,
-    handValue: values,
-    handCards: hand
-  };
+
+  const groups = Object.values(counts);
+  if (groups.some(c => c === 4)) return { handName: HAND_NAMES[7], handRank: 7, handValue: groupKeys, handCards: hand };
+  if (groups.some(c => c === 3) && groups.some(c => c === 2)) return { handName: HAND_NAMES[6], handRank: 6, handValue: groupKeys, handCards: hand };
+  if (groups.some(c => c === 3)) return { handName: HAND_NAMES[3], handRank: 3, handValue: groupKeys, handCards: hand };
+  if (groups.filter(c => c === 2).length === 2) return { handName: HAND_NAMES[2], handRank: 2, handValue: groupKeys, handCards: hand };
+  if (groups.some(c => c === 2)) return { handName: HAND_NAMES[1], handRank: 1, handValue: groupKeys, handCards: hand };
+
+  return { handName: HAND_NAMES[0], handRank: 0, handValue: values, handCards: hand };
 }
 
 
@@ -197,12 +151,13 @@ function compareHandResults(a: PlayerHandResult, b: PlayerHandResult): number {
   if (a.handRank !== b.handRank) {
     return a.handRank - b.handRank;
   }
+  // If hand ranks are the same, compare card values (kickers)
   for (let i = 0; i < a.handValue.length; i++) {
     if (a.handValue[i] !== b.handValue[i]) {
       return a.handValue[i] - b.handValue[i];
     }
   }
-  return 0;
+  return 0; // It's a tie
 }
 
 /**
@@ -218,7 +173,7 @@ function findWinners(sortedResults: PlayerHandResult[]): PlayerHandResult[] {
 /**
  * Formats the final output object, including generating the explanation.
  */
-function formatOutput(sortedResults: PlayerHandResult[], winners: PlayerHandResult[]): PokerHandResult {
+function formatOutput(rankedResults: PlayerHandResult[], winners: PlayerHandResult[]): PokerHandResult {
   let winnerString: string;
   if (winners.length > 1) {
     const winnerNames = winners.map(w => w.playerId).join(' and ');
@@ -226,15 +181,12 @@ function formatOutput(sortedResults: PlayerHandResult[], winners: PlayerHandResu
   } else {
     winnerString = winners[0].playerId;
   }
-
-  // Sort by hand rank for the final display
-  const finalRankedResults = [...sortedResults].sort((a, b) => compareHandResults(b, a));
-
-  const explanation = generateExplanation(finalRankedResults, winners);
+  
+  const explanation = generateExplanation(rankedResults, winners);
 
   return {
     winner: winnerString,
-    rankedResults: finalRankedResults.map(r => ({ ...r, handCards: sortCards(r.handCards) })),
+    rankedResults: rankedResults.map(r => ({ ...r, handCards: sortCards(r.handCards) })),
     explanation,
   };
 }
@@ -242,8 +194,8 @@ function formatOutput(sortedResults: PlayerHandResult[], winners: PlayerHandResu
 /**
  * Generates a human-readable explanation of the result.
  */
-function generateExplanation(sortedResults: PlayerHandResult[], winners: PlayerHandResult[]): string {
-    if (winners.length === 0 || sortedResults.length === 0) {
+function generateExplanation(rankedResults: PlayerHandResult[], winners: PlayerHandResult[]): string {
+    if (winners.length === 0 || rankedResults.length === 0) {
         return "Could not determine a winner.";
     }
 
@@ -251,32 +203,29 @@ function generateExplanation(sortedResults: PlayerHandResult[], winners: PlayerH
     const winnerNames = winners.map(w => w.playerId).join(' and ');
     const winningHandName = winners[0].handName;
     const verb = winnerIsPlural ? 'win' : 'wins';
-    const possessive = winnerIsPlural ? "their" : (winners[0].playerId === 'You' ? 'your' : `${winners[0].playerId}'s`);
-
-    let explanation = `${winnerNames} ${verb} with a ${winningHandName}.\n\n`;
-    explanation += `Here's the ranking breakdown:\n`;
-
-    sortedResults.forEach((result, index) => {
-        explanation += `${index + 1}. ${result.playerId}: ${result.handName}\n`;
-    });
-
-    if (sortedResults.length > 1) {
-        explanation += `\n**Why ${winnerNames} Won:**\n`;
-        const winnerResult = winners[0];
-        const runnerUpResult = sortedResults.find(r => !winners.some(w => w.playerId === r.playerId));
-
-        if (!runnerUpResult) {
-            explanation += `All winning hands are of equal value.`;
-        } else if (winnerResult.handRank > runnerUpResult.handRank) {
-            explanation += `${possessive} ${winnerResult.handName} is a higher-ranking hand than ${runnerUpResult.playerId}'s ${runnerUpResult.handName}.`;
-        } else {
-            // Same hand rank, explain tie-breaker (kickers)
-            explanation += `Both hands are a ${winnerResult.handName}, so we look at the cards' values (kickers).\n`;
-            explanation += `${possessive} hand (${formatCards(winnerResult.handCards)}) beats ${runnerUpResult.playerId}'s hand (${formatCards(runnerUpResult.handCards)}) due to higher-ranking cards.`
-        }
-    }
     
-    return explanation;
+    let explanation = `${winnerNames} ${verb} with a ${winningHandName}.`;
+    
+    const runnerUpResult = rankedResults.find(r => !winners.some(w => w.playerId === r.playerId));
+
+    if (runnerUpResult) {
+        const winnerResult = winners[0];
+        if (winnerResult.handRank > runnerUpResult.handRank) {
+            explanation += ` This beats ${runnerUpResult.playerId}'s ${runnerUpResult.handName}.`;
+        } else {
+            // Tie-breaker explanation
+            explanation += ` This beats ${runnerUpResult.playerId}'s ${runnerUpResult.handName} on kickers. The deciding card(s) were higher.`;
+        }
+    } else if (winnerIsPlural) {
+        explanation += ` All winning players had hands of equal value.`
+    }
+
+    explanation += `\n\n**Full Ranking:**\n`;
+    rankedResults.forEach((result, index) => {
+        explanation += `${index + 1}. ${result.playerId}: ${result.handName} (${formatCards(result.handCards)})\n`;
+    });
+    
+    return explanation.trim();
 }
 
 
@@ -292,6 +241,7 @@ function getCombinations<T>(array: T[], k: number): T[][] {
       result.push([...data]);
       return;
     }
+    if (start >= array.length) return;
     for (let i = start; i < array.length && array.length - i >= k - index; i++) {
       data[index] = array[i];
       comb(data, i + 1, index + 1);
@@ -308,5 +258,5 @@ function sortCards(cards: string[]): string[] {
 
 /** Formats an array of card strings for display */
 function formatCards(cards: string[]): string {
-    return cards.map(c => c.replace('T', '10')).join(', ');
+    return sortCards(cards).map(c => c.replace('T', '10')).join(', ');
 }
