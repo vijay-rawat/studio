@@ -3,15 +3,16 @@
 
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { BrainCircuit, Lightbulb, AlertTriangle, PartyPopper, Scale } from 'lucide-react';
+import { BrainCircuit, Lightbulb, AlertTriangle, PartyPopper, Scale, Trash2, Undo2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { analyzePokerHand, type AnalyzePokerHandInput, type AnalyzePokerHandOutput } from '@/ai/flows/analyze-poker-hand-flow';
 import { cn } from '@/lib/utils';
+import { CardSelector, type HandSection } from './card-selector';
+import { CardSlot } from './card-slot';
 
 
 // A simple component to render a poker card with suit and rank
@@ -38,74 +39,73 @@ const PokerCard = ({ card, isHighlighted, isOpponent = false }: { card: string; 
 
 
 export function HandAnalyzerView() {
-  const [myHand, setMyHand] = useState('');
-  const [opponentHand, setOpponentHand] = useState('');
-  const [communityCards, setCommunityCards] = useState('');
+  const [myHand, setMyHand] = useState<string[]>([]);
+  const [opponentHand, setOpponentHand] = useState<string[]>([]);
+  const [communityCards, setCommunityCards] = useState<string[]>([]);
+
   const [isLoading, setIsLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalyzePokerHandOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-
-  const parseCards = (cardString: string): string[] => {
-    return cardString.trim().toUpperCase().split(/[\s,]+/).filter(c => c.length >= 2);
-  };
-
-  const validateAndFormatCards = (input: string, requiredCount?: number): string[] | null => {
-    const cards = parseCards(input);
-    if (requiredCount && cards.length !== requiredCount) return null;
-    const validCardRegex = /^(?:[2-9TJQKA])([SDHC])$/;
-    const seenCards = new Set();
-
-    for (const card of cards) {
-      if (!validCardRegex.test(card)) return null;
-      if (seenCards.has(card)) return null; // Duplicate card check
-      seenCards.add(card);
-    }
-    return cards;
-  };
-
-  const allEnteredCards = useMemo(() => {
-    const all = [
-      ...parseCards(myHand),
-      ...parseCards(opponentHand),
-      ...parseCards(communityCards),
-    ];
-    const uniqueCards = new Set(all);
-    return { hasDuplicates: all.length !== uniqueCards.size, duplicates: all.filter((c, i) => all.indexOf(c) !== i) };
+  
+  const allSelectedCards = useMemo(() => {
+    return new Set([...myHand, ...opponentHand, ...communityCards]);
   }, [myHand, opponentHand, communityCards]);
+
+  const handleCardSelect = (card: string, section: HandSection, index: number) => {
+    const setters = {
+      myHand: setMyHand,
+      opponentHand: setOpponentHand,
+      communityCards: setCommunityCards
+    };
+    
+    setters[section](prev => {
+      const newHand = [...prev];
+      newHand[index] = card;
+      return newHand;
+    });
+  }
+
+  const handleClearSection = (section: HandSection) => {
+    const setters = {
+      myHand: setMyHand,
+      opponentHand: setOpponentHand,
+      communityCards: setCommunityCards
+    };
+    setters[section]([]);
+    setAnalysisResult(null);
+  }
+  
+  const handleClearAll = () => {
+    setMyHand([]);
+    setOpponentHand([]);
+    setCommunityCards([]);
+    setAnalysisResult(null);
+    setError(null);
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setAnalysisResult(null);
 
-    const myHandCards = validateAndFormatCards(myHand, 2);
-    if (!myHandCards) {
-      toast({ title: "Invalid Input", description: "Your hand must contain exactly 2 valid, unique cards (e.g., AS KH).", variant: "destructive" });
+    if (myHand.length !== 2) {
+      toast({ title: "Invalid Input", description: "Your hand must contain exactly 2 cards.", variant: "destructive" });
       return;
     }
-
-    const opponentHandCards = validateAndFormatCards(opponentHand, 2);
-    if (!opponentHandCards) {
-      toast({ title: "Invalid Input", description: "Opponent's hand must contain exactly 2 valid, unique cards.", variant: "destructive" });
+    if (opponentHand.length !== 2) {
+      toast({ title: "Invalid Input", description: "Opponent's hand must contain exactly 2 cards.", variant: "destructive" });
       return;
     }
-
-    const communityBoardCards = validateAndFormatCards(communityCards);
-    if (!communityBoardCards || communityBoardCards.length < 3 || communityBoardCards.length > 5) {
-      toast({ title: "Invalid Input", description: "Community cards must contain 3 to 5 valid, unique cards.", variant: "destructive" });
-      return;
-    }
-    
-    if (allEnteredCards.hasDuplicates) {
-      toast({ title: "Duplicate Cards Found", description: `Each card can only appear once. Duplicates: ${allEnteredCards.duplicates.join(', ')}`, variant: "destructive" });
+    if (communityCards.length < 3 || communityCards.length > 5) {
+      toast({ title: "Invalid Input", description: "Community cards must contain 3 to 5 cards.", variant: "destructive" });
       return;
     }
 
     const input: AnalyzePokerHandInput = {
-      myHand: myHandCards,
-      opponentHand: opponentHandCards,
-      communityCards: communityBoardCards,
+      myHand: myHand,
+      opponentHand: opponentHand,
+      communityCards: communityCards,
     };
 
     setIsLoading(true);
@@ -120,7 +120,7 @@ export function HandAnalyzerView() {
       setIsLoading(false);
     }
   };
-
+  
   const getResultIcon = () => {
     if (!analysisResult) return null;
     switch (analysisResult.winner) {
@@ -139,6 +139,25 @@ export function HandAnalyzerView() {
     }
   };
 
+  const renderCardSlots = (section: HandSection, count: number, cards: string[]) => {
+    const slots = [];
+    for (let i = 0; i < count; i++) {
+      slots.push(
+        <CardSelector 
+          key={`${section}-${i}`} 
+          selectedCard={cards[i]} 
+          onCardSelect={(card) => handleCardSelect(card, section, i)}
+          allSelectedCards={allSelectedCards}
+        >
+          <CardSlot card={cards[i]} />
+        </CardSelector>
+      );
+    }
+    return slots;
+  };
+  
+  const isSubmitDisabled = isLoading || myHand.length !== 2 || opponentHand.length !== 2 || communityCards.length < 3;
+
   return (
     <div className="space-y-8">
       <Card className="shadow-xl border-border/50">
@@ -147,28 +166,52 @@ export function HandAnalyzerView() {
             <BrainCircuit className="h-8 w-8 text-primary" />
             <div>
               <CardTitle className="text-3xl">AI Hand Analyzer</CardTitle>
-              <CardDescription>Enter hands and board cards to see who wins and why. Use format 'AS' for Ace of Spades, 'TD' for 10 of Diamonds, etc.</CardDescription>
+              <CardDescription>Click the slots to select cards for each hand and the community board, then click Analyze.</CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
-            <div className="space-y-4">
-               <Input placeholder="Your Hand (e.g., AH KD)" value={myHand} onChange={e => setMyHand(e.target.value)} disabled={isLoading} />
-               <Input placeholder="Opponent's Hand (e.g., 7C 8C)" value={opponentHand} onChange={e => setOpponentHand(e.target.value)} disabled={isLoading} />
-               <Input placeholder="Community Cards (e.g., 9C TC JC QS 2D)" value={communityCards} onChange={e => setCommunityCards(e.target.value)} disabled={isLoading} />
+        <CardContent className="space-y-6">
+            <div className="space-y-4 rounded-lg bg-muted/30 p-4">
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-semibold text-lg">Your Hand</h3>
+                  <Button variant="ghost" size="sm" onClick={() => handleClearSection('myHand')} disabled={myHand.length === 0}><Trash2 className="h-4 w-4 mr-2"/>Clear</Button>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {renderCardSlots('myHand', 2, myHand)}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                 <div className="flex justify-between items-center">
+                  <h3 className="font-semibold text-lg">Opponent's Hand</h3>
+                  <Button variant="ghost" size="sm" onClick={() => handleClearSection('opponentHand')} disabled={opponentHand.length === 0}><Trash2 className="h-4 w-4 mr-2"/>Clear</Button>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                   {renderCardSlots('opponentHand', 2, opponentHand)}
+                </div>
+              </div>
+              
+               <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                    <h3 className="font-semibold text-lg">Community Cards (Flop, Turn, River)</h3>
+                    <Button variant="ghost" size="sm" onClick={() => handleClearSection('communityCards')} disabled={communityCards.length === 0}><Trash2 className="h-4 w-4 mr-2"/>Clear</Button>
+                  </div>
+                <div className="flex gap-2 flex-wrap">
+                   {renderCardSlots('communityCards', 5, communityCards)}
+                </div>
+              </div>
             </div>
-            <Button type="submit" className="w-full md:w-auto justify-self-end text-base py-3" disabled={isLoading}>
-              {isLoading ? 'Analyzing...' : 'Analyze Hands'}
-            </Button>
-          </form>
-          {allEnteredCards.hasDuplicates && (
-            <Alert variant="destructive" className="mt-4">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Duplicate Card Warning</AlertTitle>
-              <AlertDescription>The card(s) '{allEnteredCards.duplicates.join(', ')}' are entered more than once.</AlertDescription>
-            </Alert>
-          )}
+            
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
+              <Button variant="outline" onClick={handleClearAll} disabled={isLoading || allSelectedCards.size === 0}>
+                <Undo2 className="h-4 w-4 mr-2" />
+                Reset Board
+              </Button>
+              <Button onClick={handleSubmit} className="text-base py-3" disabled={isSubmitDisabled}>
+                {isLoading ? 'Analyzing...' : 'Analyze Hands'}
+              </Button>
+            </div>
         </CardContent>
       </Card>
       
@@ -206,17 +249,17 @@ export function HandAnalyzerView() {
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg">Your Hand ({analysisResult.yourBestHand.handName})</h3>
                   <div className="flex gap-2 flex-wrap bg-muted/30 p-4 rounded-lg">
-                    {parseCards(myHand).map(c => <PokerCard key={c} card={c} isHighlighted={analysisResult.yourBestHand.handCards.includes(c)} />)}
+                    {myHand.map(c => <PokerCard key={`res-my-${c}`} card={c} isHighlighted={analysisResult.yourBestHand.handCards.includes(c)} />)}
                   </div>
 
                   <h3 className="font-semibold text-lg">Opponent's Hand ({analysisResult.opponentBestHand.handName})</h3>
                    <div className="flex gap-2 flex-wrap bg-muted/30 p-4 rounded-lg">
-                    {parseCards(opponentHand).map(c => <PokerCard key={c} card={c} isHighlighted={analysisResult.opponentBestHand.handCards.includes(c)} isOpponent={true} />)}
+                    {opponentHand.map(c => <PokerCard key={`res-opp-${c}`} card={c} isHighlighted={analysisResult.opponentBestHand.handCards.includes(c)} isOpponent={true} />)}
                   </div>
 
                   <h3 className="font-semibold text-lg">Community Cards</h3>
                   <div className="flex gap-2 flex-wrap bg-muted/30 p-4 rounded-lg">
-                    {parseCards(communityCards).map(c => <PokerCard key={c} card={c} isHighlighted={analysisResult.yourBestHand.handCards.includes(c) || analysisResult.opponentBestHand.handCards.includes(c)} />)}
+                    {communityCards.map(c => <PokerCard key={`res-comm-${c}`} card={c} isHighlighted={analysisResult.yourBestHand.handCards.includes(c) || analysisResult.opponentBestHand.handCards.includes(c)} />)}
                   </div>
                 </div>
                 
