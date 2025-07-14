@@ -14,6 +14,7 @@ import type { PokerHandResult } from '@/lib/poker-evaluator';
 import { cn } from '@/lib/utils';
 import { CardSelector } from './card-selector';
 import { CardSlot } from './card-slot';
+import { AnimatedResultBorder } from './animated-result-border';
 
 type HandSection = 'myHand' | 'communityCards' | `opponentHand${number}`;
 
@@ -284,12 +285,13 @@ export function HandAnalyzerView() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5, delay: index * 0.1 }}
                             className={cn(
-                                "p-4 rounded-xl border transition-colors",
+                                "p-4 rounded-xl border transition-colors relative overflow-hidden",
                                 isWinner 
                                     ? "bg-emerald-950/30 border-emerald-500/50" 
                                     : "bg-destructive/10 border-destructive/40"
                             )}
                          >
+                            {isWinner && <AnimatedResultBorder />}
                             <h3 className="font-semibold text-lg mb-2">{result.playerId}'s Best Hand: <span className="font-normal">{result.handName}</span></h3>
                             <div className="flex gap-2 flex-wrap">
                                 {result.handCards.map(c => <PokerCard key={`res-best-${result.playerId}-${c}`} card={c} isHighlighted={true} />)}
