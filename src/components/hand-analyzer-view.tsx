@@ -9,7 +9,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { BrainCircuit, Lightbulb, AlertTriangle, PartyPopper, Scale, Trash2, Undo2, UserPlus, Trophy } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { analyzePokerHand, type AnalyzePokerHandInput, type AnalyzePokerHandOutput } from '@/ai/flows/analyze-poker-hand-flow';
+import { evaluatePokerHands, type PokerHandInput } from '@/lib/poker-evaluator';
+import type { PokerHandResult } from '@/lib/poker-evaluator';
 import { cn } from '@/lib/utils';
 import { CardSelector } from './card-selector';
 import { CardSlot } from './card-slot';
@@ -46,7 +47,7 @@ export function HandAnalyzerView() {
   const [communityCards, setCommunityCards] = useState<string[]>([]);
 
   const [isLoading, setIsLoading] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<AnalyzePokerHandOutput | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<PokerHandResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   
@@ -117,23 +118,26 @@ export function HandAnalyzerView() {
       return;
     }
 
-    const input: AnalyzePokerHandInput = {
+    const input: PokerHandInput = {
       myHand: myHand,
       opponentHands: validOpponentHands,
       communityCards: communityCards,
     };
 
     setIsLoading(true);
-    try {
-      const result = await analyzePokerHand(input);
-      setAnalysisResult(result);
-    } catch (e) {
-      console.error(e);
-      setError("An error occurred while analyzing the hands. The AI may be unable to process this request. Please try again.");
-      toast({ title: "Analysis Failed", description: "Could not get a response from the AI. Please check your input and try again.", variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
+    // Use a timeout to simulate a small delay for a better UX, as local evaluation can be instant
+    setTimeout(() => {
+      try {
+        const result = evaluatePokerHands(input);
+        setAnalysisResult(result);
+      } catch (e: any) {
+        console.error(e);
+        setError(e.message || "An error occurred while analyzing the hands. Please check your card inputs.");
+        toast({ title: "Analysis Failed", description: e.message || "Could not analyze the hands.", variant: "destructive" });
+      } finally {
+        setIsLoading(false);
+      }
+    }, 300);
   };
   
   const getResultIcon = () => {
@@ -184,7 +188,7 @@ export function HandAnalyzerView() {
           <div className="flex items-center gap-3">
             <BrainCircuit className="h-8 w-8 text-primary" />
             <div>
-              <CardTitle className="text-3xl">AI Multi-Hand Analyzer</CardTitle>
+              <CardTitle className="text-3xl">Hand Analyzer</CardTitle>
               <CardDescription>Select cards for all hands and the board to see who wins a multi-way pot.</CardDescription>
             </div>
           </div>
@@ -289,7 +293,7 @@ export function HandAnalyzerView() {
                          >
                             <h3 className="font-semibold text-lg mb-2">{result.playerId}'s Hand ({result.handName})</h3>
                             <div className="flex gap-2 flex-wrap">
-                                {allPlayerHoleCards.map(c => <PokerCard key={`res-${result.playerId}-${c}`} card={c} isHighlighted={result.handCards.includes(c)} />)}
+                                {result.handCards.map(c => <PokerCard key={`res-${result.playerId}-${c}`} card={c} isHighlighted={true} />)}
                             </div>
                          </motion.div>
                       );
@@ -303,8 +307,8 @@ export function HandAnalyzerView() {
                 
                 <Alert className="border-primary/30 bg-primary/5">
                   <Lightbulb className="h-4 w-4 text-primary" />
-                  <AlertTitle className="text-primary">AI Explanation</AlertTitle>
-                  <AlertDescription className="prose prose-sm dark:prose-invert max-w-none">
+                  <AlertTitle className="text-primary">Explanation</AlertTitle>
+                  <AlertDescription className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-line">
                     {analysisResult.explanation}
                   </AlertDescription>
                 </Alert>
