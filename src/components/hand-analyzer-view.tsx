@@ -287,7 +287,7 @@ export function HandAnalyzerView() {
                                 "p-4 rounded-xl border transition-colors",
                                 isWinner 
                                     ? "bg-emerald-950/30 border-emerald-500/50" 
-                                    : "bg-muted/30 border-transparent"
+                                    : "bg-destructive/10 border-destructive/40"
                             )}
                          >
                             <h3 className="font-semibold text-lg mb-2">{result.playerId}'s Best Hand: <span className="font-normal">{result.handName}</span></h3>
