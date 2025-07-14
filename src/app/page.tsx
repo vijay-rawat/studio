@@ -10,9 +10,10 @@ import { SummaryDisplay } from '@/components/summary-display';
 import { SessionEndedStatsDisplay } from '@/components/session-ended-stats-display';
 import { SessionEndGraphDisplay } from '@/components/session-end-graph-display';
 import { FullLedgerView } from '@/components/full-ledger-view';
-import { Users, CalendarOff, Trash2, Gamepad2, BookOpen } from 'lucide-react';
+import { HandAnalyzerView } from '@/components/hand-analyzer-view';
+import { Users, CalendarOff, Trash2, Gamepad2, BookOpen, BrainCircuit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertDialog,
@@ -299,6 +300,12 @@ export default function PokerTrackerPage() {
             >
               <BookOpen className="mr-2 h-5 w-5" /> Full Ledger
             </TabsTrigger>
+            <TabsTrigger
+              value="hand-analyzer"
+              className="px-6 py-2 text-sm font-medium text-muted-foreground rounded-full transition-colors duration-200 ease-out focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:text-foreground focus-visible:text-foreground"
+            >
+              <BrainCircuit className="mr-2 h-5 w-5" /> Hand Analyzer
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="game-view">
@@ -411,6 +418,11 @@ export default function PokerTrackerPage() {
               isSessionEnded={isSessionEnded}
             />
           </TabsContent>
+          
+          <TabsContent value="hand-analyzer">
+            <HandAnalyzerView />
+          </TabsContent>
+
         </Tabs>
       </main>
       <footer className="text-center mt-12 py-8 border-t border-border/50">
