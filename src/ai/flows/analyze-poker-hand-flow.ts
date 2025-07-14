@@ -12,14 +12,14 @@ import { z } from 'zod';
 
 const cardSchema = z.string().describe("A single playing card in the format 'RS' where R is rank (2-9, T, J, Q, K, A) and S is suit (C, D, H, S). Example: 'AS' for Ace of Spades, 'TC' for 10 of Clubs.");
 
-export const AnalyzePokerHandInputSchema = z.object({
+const AnalyzePokerHandInputSchema = z.object({
   myHand: z.array(cardSchema).length(2).describe("The two cards in your hand."),
   opponentHand: z.array(cardSchema).length(2).describe("The two cards in your opponent's hand."),
   communityCards: z.array(cardSchema).min(3).max(5).describe("The community cards on the board (flop, turn, river)."),
 });
 export type AnalyzePokerHandInput = z.infer<typeof AnalyzePokerHandInputSchema>;
 
-export const AnalyzePokerHandOutputSchema = z.object({
+const AnalyzePokerHandOutputSchema = z.object({
   winner: z.enum(['You', 'Opponent', 'Split pot']).describe("Who the winner is."),
   yourBestHand: z.object({
     handName: z.string().describe("The name of your best 5-card hand (e.g., 'Full House', 'Flush')."),
