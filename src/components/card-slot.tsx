@@ -21,11 +21,11 @@ const PokerCardDisplay = ({ card }: { card: string }) => {
 };
 
 
-interface CardSlotProps {
+interface CardSlotProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   card?: string;
 }
 
-export function CardSlot({ card }: CardSlotProps) {
+export function CardSlot({ card, ...props }: CardSlotProps) {
   return (
     <button
       type="button"
@@ -33,6 +33,7 @@ export function CardSlot({ card }: CardSlotProps) {
         "relative flex h-24 w-16 flex-col justify-between rounded-lg border-2 bg-card p-1 text-center font-bold shadow-md transition-all duration-300 hover:border-primary/70",
         card ? 'border-border' : 'border-dashed border-muted-foreground/50'
       )}
+      {...props}
     >
       {card ? <PokerCardDisplay card={card} /> : <Plus className="h-8 w-8 text-muted-foreground/50 m-auto" />}
     </button>
