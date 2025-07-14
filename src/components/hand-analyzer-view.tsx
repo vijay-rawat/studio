@@ -270,19 +270,32 @@ export function HandAnalyzerView() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
-                   {analysisResult.rankedResults.map(result => {
+                   {analysisResult.rankedResults.map((result, index) => {
                       const allPlayerHoleCards = result.playerId === 'You' ? myHand : opponentHands[parseInt(result.playerId.split(' ')[1]) - 1] || [];
+                      const isWinner = analysisResult.winner.includes(result.playerId);
+
                       return (
-                         <div key={result.playerId}>
-                            <h3 className="font-semibold text-lg">{result.playerId}'s Hand ({result.handName})</h3>
-                            <div className="flex gap-2 flex-wrap bg-muted/30 p-4 rounded-lg">
+                         <motion.div 
+                            key={result.playerId}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: index * 0.1 }}
+                            className={cn(
+                                "p-4 rounded-xl border transition-colors",
+                                isWinner 
+                                    ? "bg-emerald-950/30 border-emerald-500/50" 
+                                    : "bg-muted/30 border-transparent"
+                            )}
+                         >
+                            <h3 className="font-semibold text-lg mb-2">{result.playerId}'s Hand ({result.handName})</h3>
+                            <div className="flex gap-2 flex-wrap">
                                 {allPlayerHoleCards.map(c => <PokerCard key={`res-${result.playerId}-${c}`} card={c} isHighlighted={result.handCards.includes(c)} />)}
                             </div>
-                         </div>
+                         </motion.div>
                       );
                    })}
 
-                  <h3 className="font-semibold text-lg">Community Cards</h3>
+                  <h3 className="font-semibold text-lg pt-4">Community Cards</h3>
                   <div className="flex gap-2 flex-wrap bg-muted/30 p-4 rounded-lg">
                     {communityCards.map(c => <PokerCard key={`res-comm-${c}`} card={c} isHighlighted={analysisResult.rankedResults.some(r => r.handCards.includes(c))} />)}
                   </div>
