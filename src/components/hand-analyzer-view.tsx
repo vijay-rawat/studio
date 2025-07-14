@@ -291,9 +291,20 @@ export function HandAnalyzerView() {
                                     : "bg-muted/30 border-transparent"
                             )}
                          >
-                            <h3 className="font-semibold text-lg mb-2">{result.playerId}'s Hand ({result.handName})</h3>
-                            <div className="flex gap-2 flex-wrap">
-                                {result.handCards.map(c => <PokerCard key={`res-${result.playerId}-${c}`} card={c} isHighlighted={true} />)}
+                            <h3 className="font-semibold text-lg mb-3">{result.playerId}'s Hand Details</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <h4 className="text-sm font-medium text-muted-foreground mb-2">Hole Cards</h4>
+                                <div className="flex gap-2 flex-wrap">
+                                  {allPlayerHoleCards.map(c => <PokerCard key={`res-hole-${result.playerId}-${c}`} card={c} isHighlighted={false} />)}
+                                </div>
+                              </div>
+                               <div>
+                                <h4 className="text-sm font-medium text-muted-foreground mb-2">Best 5-Card Hand ({result.handName})</h4>
+                                <div className="flex gap-2 flex-wrap">
+                                    {result.handCards.map(c => <PokerCard key={`res-best-${result.playerId}-${c}`} card={c} isHighlighted={true} />)}
+                                </div>
+                              </div>
                             </div>
                          </motion.div>
                       );
