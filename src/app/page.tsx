@@ -287,22 +287,22 @@ export default function PokerTrackerPage() {
 
       <main className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <Tabs defaultValue="game-view" className="w-full">
-          <TabsList className="inline-flex h-auto items-center justify-center rounded-full bg-muted/50 p-1.5 mb-8 shadow-sm ring-1 ring-border/30">
+          <TabsList className="inline-flex h-auto flex-wrap items-center justify-center rounded-full bg-muted/50 p-1.5 mb-8 shadow-sm ring-1 ring-border/30">
             <TabsTrigger
               value="game-view"
-              className="px-6 py-2 text-sm font-medium text-muted-foreground rounded-full transition-colors duration-200 ease-out focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:text-foreground focus-visible:text-foreground"
+              className="px-4 md:px-6 py-2 text-sm font-medium text-muted-foreground rounded-full transition-colors duration-200 ease-out focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:text-foreground focus-visible:text-foreground"
             >
               <Gamepad2 className="mr-2 h-5 w-5" /> Game View
             </TabsTrigger>
             <TabsTrigger
               value="full-ledger"
-              className="px-6 py-2 text-sm font-medium text-muted-foreground rounded-full transition-colors duration-200 ease-out focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:text-foreground focus-visible:text-foreground"
+              className="px-4 md:px-6 py-2 text-sm font-medium text-muted-foreground rounded-full transition-colors duration-200 ease-out focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:text-foreground focus-visible:text-foreground"
             >
               <BookOpen className="mr-2 h-5 w-5" /> Full Ledger
             </TabsTrigger>
             <TabsTrigger
               value="hand-analyzer"
-              className="px-6 py-2 text-sm font-medium text-muted-foreground rounded-full transition-colors duration-200 ease-out focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:text-foreground focus-visible:text-foreground"
+              className="px-4 md:px-6 py-2 text-sm font-medium text-muted-foreground rounded-full transition-colors duration-200 ease-out focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:text-foreground focus-visible:text-foreground"
             >
               <BrainCircuit className="mr-2 h-5 w-5" /> Hand Analyzer
             </TabsTrigger>
