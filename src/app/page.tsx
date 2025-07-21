@@ -272,10 +272,11 @@ export default function PokerTrackerPage() {
     if (isSessionEnded && sessionHistory.length > 0) {
       // Find the session that just ended by comparing the players state with history
       const currentEndedPlayerIds = new Set(players.map(p => p.id));
-      return sessionHistory.find(s => 
+      const sessionFromHistory = sessionHistory.find(s => 
         s.players.length === players.length &&
         s.players.every(p => currentEndedPlayerIds.has(p.id))
       );
+      return sessionFromHistory || (sessionHistory.length > 0 ? sessionHistory[0] : null);
     }
     return null;
   }, [isSessionEnded, players, sessionHistory]);
