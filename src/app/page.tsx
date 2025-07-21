@@ -74,13 +74,6 @@ export default function PokerTrackerPage() {
     }
   }, [players, isSessionEnded, sessionHistory, isClient, sessionStartTime]);
   
-  const lastCompletedSessionForStats = useMemo(() => {
-    if (sessionHistory.length > 0) {
-      return sessionHistory[0].players;
-    }
-    return null;
-  }, [sessionHistory]);
-
   const handleAddPlayer = (name: string) => {
     if (isSessionEnded) {
       toast({ title: "Session Ended", description: "Cannot add players after the session has ended.", variant: "destructive" });
@@ -245,7 +238,6 @@ export default function PokerTrackerPage() {
     
     const finalSessionPlayers = [...updatedPlayers];
 
-    // Archive the session immediately upon ending it
     const newSession: GameSession = {
       id: crypto.randomUUID(),
       startTime: sessionStartTime,
@@ -255,7 +247,6 @@ export default function PokerTrackerPage() {
     setSessionHistory(prev => [newSession, ...prev]);
 
     setIsSessionEnded(true);
-    // We don't reset players here anymore. Reset is a separate action.
     setPlayers(finalSessionPlayers);
 
     toast({ title: "Session Ended & Archived", description: `Game session concluded and saved to history. ${playersAutoCashedOut} player(s) automatically cashed out.` });
@@ -263,14 +254,12 @@ export default function PokerTrackerPage() {
 
 
   const handleResetGame = () => {
-    // Confirmation dialog handles warning. This function just does the work.
     if (players.length > 0 && !isSessionEnded) {
        toast({ title: "Game Reset", description: "The active game state has been cleared.", variant: "destructive" });
     } else if (isSessionEnded) {
        toast({ title: "New Game Started", description: "The previous session's stats are visible. A new game has begun."});
     }
 
-    // Reset current session state
     setPlayers([]);
     setIsSessionEnded(false);
     setSessionStartTime(new Date().toISOString());
@@ -416,9 +405,8 @@ export default function PokerTrackerPage() {
                   </div>
                 )}
 
-                {/* Always show PlayersTable if there are players and session is not ended */}
-                {!isSessionEnded && players.length > 0 && (
-                  <PlayersTable
+                {(players.length > 0 || isSessionEnded) ? (
+                  !isSessionEnded && <PlayersTable
                     players={players}
                     onUpdatePlayerName={handleUpdatePlayerName}
                     onUpdateInitialBalance={handleUpdateInitialBalance}
@@ -429,10 +417,7 @@ export default function PokerTrackerPage() {
                     onCashOutPlayer={handleCashOutPlayer}
                     isSessionEnded={isSessionEnded}
                   />
-                )}
-
-                {/* Show placeholder if game hasn't started */}
-                {players.length === 0 && !isSessionEnded && (
+                ) : (
                   <Card className="mt-8 shadow-xl border-border/50">
                     <CardContent className="p-10 text-center flex flex-col items-center justify-center min-h-[200px]">
                       <Users className="h-20 w-20 text-muted-foreground/50 mx-auto mb-6" />
@@ -440,14 +425,6 @@ export default function PokerTrackerPage() {
                       <p className="text-sm text-muted-foreground/80">Use the form above to add players and start tracking balances.</p>
                     </CardContent>
                   </Card>
-                )}
-
-                {/* Show last session stats if available */}
-                {(isSessionEnded || lastCompletedSessionForStats) && (
-                  <div className='space-y-8'>
-                    <SessionEndedStatsDisplay players={isSessionEnded ? players : lastCompletedSessionForStats!} />
-                    <SessionEndGraphDisplay players={isSessionEnded ? players : lastCompletedSessionForStats!} />
-                  </div>
                 )}
                 
               </div>
