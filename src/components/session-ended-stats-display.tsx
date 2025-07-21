@@ -49,14 +49,14 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
   }, [playerStats]);
 
 
-  if (players.length === 0) {
+  if (!players || players.length === 0) {
     return (
       <Card className="w-full shadow-xl border-border/50 mt-8">
         <CardHeader>
-          <CardTitle className="text-2xl flex items-center"><BarChart3 className="mr-3 h-7 w-7 text-primary" />Session Ended - No Player Data</CardTitle>
+          <CardTitle className="text-2xl flex items-center"><BarChart3 className="mr-3 h-7 w-7 text-primary" />Session Stats</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">No players participated or no data was recorded for this session.</p>
+          <p className="text-muted-foreground">No player data available for this session.</p>
         </CardContent>
       </Card>
     );
@@ -68,7 +68,7 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
         <div className="flex items-center gap-3">
             <BarChart3 className="h-8 w-8 text-primary" />
             <div>
-                <CardTitle className="text-3xl">Session Ended - Final Stats</CardTitle>
+                <CardTitle className="text-3xl">Final Session Stats</CardTitle>
                 <CardDescription>
                   Summary of player performance for the concluded game.
                   {divisionEnabled && <span className="block text-accent font-semibold">(Displaying halved results for pot split)</span>}
@@ -203,15 +203,3 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
     </Card>
   );
 }
-    
-
-    
-
-    
-
-
-
-
-    
-
-    

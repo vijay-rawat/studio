@@ -2,7 +2,7 @@
 "use client";
 
 import type * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { Player, Transaction, GameSession } from '@/types';
 import { AddPlayerForm } from '@/components/add-player-form';
 import { PlayersTable } from '@/components/players-table';
@@ -73,6 +73,18 @@ export default function PokerTrackerPage() {
       localStorage.setItem('pokerSessionHistory', JSON.stringify(sessionHistory));
     }
   }, [players, isSessionEnded, sessionHistory, isClient, sessionStartTime]);
+  
+  const mostRecentSessionForStats = useMemo(() => {
+    // If current session is ended, it takes precedence for display until reset.
+    if (isSessionEnded && players.length > 0) {
+      return players;
+    }
+    // After reset, if history exists, show the last completed session.
+    if (sessionHistory.length > 0) {
+      return sessionHistory[0].players;
+    }
+    return null;
+  }, [players, isSessionEnded, sessionHistory]);
 
   const handleAddPlayer = (name: string) => {
     if (isSessionEnded) {
@@ -399,10 +411,10 @@ export default function PokerTrackerPage() {
                   </div>
                 )}
 
-                {isSessionEnded && players.length > 0 && (
+                {mostRecentSessionForStats && (
                   <>
-                    <SessionEndedStatsDisplay players={players} />
-                    <SessionEndGraphDisplay players={players} />
+                    <SessionEndedStatsDisplay players={mostRecentSessionForStats} />
+                    <SessionEndGraphDisplay players={mostRecentSessionForStats} />
                   </>
                 )}
 
@@ -420,7 +432,7 @@ export default function PokerTrackerPage() {
                   />
                 )}
 
-                {players.length === 0 && !isSessionEnded ? (
+                {players.length === 0 && !isSessionEnded && !mostRecentSessionForStats ? (
                   <Card className="mt-8 shadow-xl border-border/50">
                     <CardContent className="p-10 text-center flex flex-col items-center justify-center min-h-[200px]">
                       <Users className="h-20 w-20 text-muted-foreground/50 mx-auto mb-6" />
@@ -428,7 +440,7 @@ export default function PokerTrackerPage() {
                       <p className="text-sm text-muted-foreground/80">Use the form above to add players and start tracking balances.</p>
                     </CardContent>
                   </Card>
-                ) : players.length === 0 && isSessionEnded ? (
+                ) : players.length === 0 && isSessionEnded && !mostRecentSessionForStats ? (
                    <Card className="mt-8 shadow-xl border-border/50">
                     <CardContent className="p-10 text-center flex flex-col items-center justify-center min-h-[200px]">
                       <Users className="h-20 w-20 text-muted-foreground/50 mx-auto mb-6" />
@@ -471,5 +483,3 @@ export default function PokerTrackerPage() {
     </div>
   );
 }
-
-    
