@@ -12,7 +12,7 @@ import { SessionEndGraphDisplay } from '@/components/session-end-graph-display';
 import { FullLedgerView } from '@/components/full-ledger-view';
 import { HandAnalyzerView } from '@/components/hand-analyzer-view';
 import { SessionHistoryView } from '@/components/session-history-view'; 
-import { Users, CalendarOff, Trash2, Gamepad2, BookOpen, BrainCircuit, History } from 'lucide-react';
+import { Users, CalendarOff, Trash2, Gamepad2, BookOpen, BrainCircuit, History, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -39,6 +39,7 @@ export default function PokerTrackerPage() {
   const [sessionHistory, setSessionHistory] = useState<GameSession[]>([]);
   const [sessionStartTime, setSessionStartTime] = useState<string>('');
   const [currentYear, setCurrentYear] = useState<string>('');
+  const [activeTab, setActiveTab] = useState("game-view");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -248,6 +249,7 @@ export default function PokerTrackerPage() {
 
     setIsSessionEnded(true);
     setPlayers(finalSessionPlayers);
+    setActiveTab("final-stats"); // Switch to the new Final Stats tab
 
     toast({ title: "Session Ended & Archived", description: `Game session concluded and saved to history. ${playersAutoCashedOut} player(s) automatically cashed out.` });
   };
@@ -263,7 +265,20 @@ export default function PokerTrackerPage() {
     setPlayers([]);
     setIsSessionEnded(false);
     setSessionStartTime(new Date().toISOString());
+    setActiveTab("game-view");
   }
+
+  const justEndedSession = useMemo(() => {
+    if (isSessionEnded && sessionHistory.length > 0) {
+      // Find the session that just ended by comparing the players state with history
+      const currentEndedPlayerIds = new Set(players.map(p => p.id));
+      return sessionHistory.find(s => 
+        s.players.length === players.length &&
+        s.players.every(p => currentEndedPlayerIds.has(p.id))
+      );
+    }
+    return null;
+  }, [isSessionEnded, players, sessionHistory]);
 
   if (!isClient) {
     return (
@@ -318,7 +333,7 @@ export default function PokerTrackerPage() {
       </header>
 
       <main className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <Tabs defaultValue="game-view" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="inline-flex h-auto flex-wrap items-center justify-center rounded-full bg-muted/50 p-1.5 mb-8 shadow-sm ring-1 ring-border/30">
             <TabsTrigger
               value="game-view"
@@ -326,6 +341,14 @@ export default function PokerTrackerPage() {
             >
               <Gamepad2 className="mr-2 h-5 w-5" /> Game View
             </TabsTrigger>
+             {isSessionEnded && (
+              <TabsTrigger
+                value="final-stats"
+                className="px-4 md:px-6 py-2 text-sm font-medium text-muted-foreground rounded-full transition-colors duration-200 ease-out focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:text-foreground focus-visible:text-foreground"
+              >
+                <BarChart3 className="mr-2 h-5 w-5" /> Final Stats
+              </TabsTrigger>
+            )}
             <TabsTrigger
               value="full-ledger"
               className="px-4 md:px-6 py-2 text-sm font-medium text-muted-foreground rounded-full transition-colors duration-200 ease-out focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:text-foreground focus-visible:text-foreground"
@@ -405,8 +428,8 @@ export default function PokerTrackerPage() {
                   </div>
                 )}
 
-                {(players.length > 0 || isSessionEnded) ? (
-                  !isSessionEnded && <PlayersTable
+                {!isSessionEnded && players.length > 0 ? (
+                  <PlayersTable
                     players={players}
                     onUpdatePlayerName={handleUpdatePlayerName}
                     onUpdateInitialBalance={handleUpdateInitialBalance}
@@ -417,12 +440,22 @@ export default function PokerTrackerPage() {
                     onCashOutPlayer={handleCashOutPlayer}
                     isSessionEnded={isSessionEnded}
                   />
-                ) : (
+                ) : !isSessionEnded ? (
                   <Card className="mt-8 shadow-xl border-border/50">
                     <CardContent className="p-10 text-center flex flex-col items-center justify-center min-h-[200px]">
                       <Users className="h-20 w-20 text-muted-foreground/50 mx-auto mb-6" />
                       <p className="text-2xl font-semibold text-muted-foreground mb-2">No Players Yet</p>
                       <p className="text-sm text-muted-foreground/80">Use the form above to add players and start tracking balances.</p>
+                    </CardContent>
+                  </Card>
+                ) : null}
+                
+                {isSessionEnded && (
+                   <Card className="mt-8 shadow-xl border-border/50">
+                    <CardContent className="p-10 text-center flex flex-col items-center justify-center min-h-[200px]">
+                      <Users className="h-20 w-20 text-primary/50 mx-auto mb-6" />
+                      <p className="text-2xl font-semibold text-muted-foreground mb-2">Session Ended</p>
+                      <p className="text-sm text-muted-foreground/80">Check the 'Final Stats' tab for results, or start a new game.</p>
                     </CardContent>
                   </Card>
                 )}
@@ -434,6 +467,23 @@ export default function PokerTrackerPage() {
               </aside>
             </div>
           </TabsContent>
+
+          {isSessionEnded && (
+            <TabsContent value="final-stats">
+              {justEndedSession ? (
+                <div className="space-y-8">
+                  <SessionEndedStatsDisplay players={justEndedSession.players} />
+                  <SessionEndGraphDisplay players={justEndedSession.players} />
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="p-10 text-center">
+                    <p>Loading session results...</p>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+          )}
 
           <TabsContent value="full-ledger">
             <FullLedgerView
