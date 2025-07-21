@@ -3,7 +3,7 @@
 
 import type * as React from 'react';
 import { useState, useEffect } from 'react';
-import type { Player, Transaction } from '@/types';
+import type { Player, Transaction, GameSession } from '@/types';
 import { AddPlayerForm } from '@/components/add-player-form';
 import { PlayersTable } from '@/components/players-table';
 import { SummaryDisplay } from '@/components/summary-display';
@@ -11,7 +11,8 @@ import { SessionEndedStatsDisplay } from '@/components/session-ended-stats-displ
 import { SessionEndGraphDisplay } from '@/components/session-end-graph-display';
 import { FullLedgerView } from '@/components/full-ledger-view';
 import { HandAnalyzerView } from '@/components/hand-analyzer-view';
-import { Users, CalendarOff, Trash2, Gamepad2, BookOpen, BrainCircuit } from 'lucide-react';
+import { SessionHistoryView } from '@/components/session-history-view'; 
+import { Users, CalendarOff, Trash2, Gamepad2, BookOpen, BrainCircuit, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,35 +30,49 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 
-
 const DEFAULT_INITIAL_BALANCE = -400;
 
 export default function PokerTrackerPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [isClient, setIsClient] = useState(false);
   const [isSessionEnded, setIsSessionEnded] = useState(false);
+  const [sessionHistory, setSessionHistory] = useState<GameSession[]>([]);
+  const [sessionStartTime, setSessionStartTime] = useState<string>('');
   const [currentYear, setCurrentYear] = useState<string>('');
   const { toast } = useToast();
 
   useEffect(() => {
     setIsClient(true);
-    const storedPlayers = localStorage.getItem('pokerPlayersSuncity');
-    const storedSessionState = localStorage.getItem('pokerSessionEndedSuncity');
-    if (storedPlayers) {
-      setPlayers(JSON.parse(storedPlayers));
+    const storedSession = localStorage.getItem('pokerCurrentSession');
+    const storedHistory = localStorage.getItem('pokerSessionHistory');
+    
+    if (storedSession) {
+      const { players, isSessionEnded, startTime } = JSON.parse(storedSession);
+      setPlayers(players);
+      setIsSessionEnded(isSessionEnded);
+      setSessionStartTime(startTime || new Date().toISOString());
+    } else {
+      setSessionStartTime(new Date().toISOString());
     }
-    if (storedSessionState) {
-      setIsSessionEnded(JSON.parse(storedSessionState));
+
+    if (storedHistory) {
+      setSessionHistory(JSON.parse(storedHistory));
     }
+    
     setCurrentYear(new Date().getFullYear().toString());
   }, []);
 
   useEffect(() => {
     if(isClient) {
-      localStorage.setItem('pokerPlayersSuncity', JSON.stringify(players));
-      localStorage.setItem('pokerSessionEndedSuncity', JSON.stringify(isSessionEnded));
+      const currentSessionState = {
+        players,
+        isSessionEnded,
+        startTime: sessionStartTime,
+      };
+      localStorage.setItem('pokerCurrentSession', JSON.stringify(currentSessionState));
+      localStorage.setItem('pokerSessionHistory', JSON.stringify(sessionHistory));
     }
-  }, [players, isSessionEnded, isClient]);
+  }, [players, isSessionEnded, sessionHistory, isClient, sessionStartTime]);
 
   const handleAddPlayer = (name: string) => {
     if (isSessionEnded) {
@@ -228,9 +243,24 @@ export default function PokerTrackerPage() {
 
 
   const handleResetGame = () => {
+    if (isSessionEnded && players.length > 0) {
+      // Archive the completed session
+      const newSession: GameSession = {
+        id: crypto.randomUUID(),
+        startTime: sessionStartTime,
+        endTime: new Date().toISOString(),
+        players: players,
+      };
+      setSessionHistory(prev => [newSession, ...prev]);
+      toast({ title: "Game Archived", description: "The completed session has been saved to history." });
+    } else {
+      toast({ title: "Game Reset", description: "The current game state has been cleared.", variant: "destructive" });
+    }
+
+    // Reset current session state
     setPlayers([]);
     setIsSessionEnded(false);
-    toast({ title: "Game Reset", description: "All player data and session state have been cleared.", variant: "destructive" });
+    setSessionStartTime(new Date().toISOString());
   }
 
   if (!isClient) {
@@ -300,6 +330,12 @@ export default function PokerTrackerPage() {
             >
               <BookOpen className="mr-2 h-5 w-5" /> Full Ledger
             </TabsTrigger>
+             <TabsTrigger
+              value="session-history"
+              className="px-4 md:px-6 py-2 text-sm font-medium text-muted-foreground rounded-full transition-colors duration-200 ease-out focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:text-foreground focus-visible:text-foreground"
+            >
+              <History className="mr-2 h-5 w-5" /> Session History
+            </TabsTrigger>
             <TabsTrigger
               value="hand-analyzer"
               className="px-4 md:px-6 py-2 text-sm font-medium text-muted-foreground rounded-full transition-colors duration-200 ease-out focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:text-foreground focus-visible:text-foreground"
@@ -349,13 +385,13 @@ export default function PokerTrackerPage() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete all players, transactions, and session data, resetting the game.
+                            This action cannot be undone. If the session has been ended, it will be archived. Otherwise, all current data will be cleared.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction onClick={handleResetGame} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
-                            Yes, Reset Game
+                            {isSessionEnded ? "Yes, Archive and Reset" : "Yes, Reset Game"}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
@@ -397,7 +433,7 @@ export default function PokerTrackerPage() {
                     <CardContent className="p-10 text-center flex flex-col items-center justify-center min-h-[200px]">
                       <Users className="h-20 w-20 text-muted-foreground/50 mx-auto mb-6" />
                       <p className="text-2xl font-semibold text-muted-foreground mb-2">Session Ended</p>
-                      <p className="text-sm text-muted-foreground/80">No player data was recorded for this session.</p>
+                      <p className="text-sm text-muted-foreground/80">No player data was recorded for this session. Reset to start a new game.</p>
                     </CardContent>
                   </Card>
                 ) : null}
@@ -419,6 +455,10 @@ export default function PokerTrackerPage() {
             />
           </TabsContent>
           
+          <TabsContent value="session-history">
+            <SessionHistoryView sessions={sessionHistory} />
+          </TabsContent>
+
           <TabsContent value="hand-analyzer">
             <HandAnalyzerView />
           </TabsContent>
@@ -431,3 +471,5 @@ export default function PokerTrackerPage() {
     </div>
   );
 }
+
+    
