@@ -21,13 +21,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { Edit3, Trash2, PlusCircle, BookOpenText, User, Users } from 'lucide-react'; // Removed Info
+import { Edit3, Trash2, PlusCircle, BookOpenText, User, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { GlobalAddTransactionDialog } from './global-add-transaction-dialog';
 import { EditLedgerItemDialog } from './edit-ledger-item-dialog';
 import { Badge } from '@/components/ui/badge';
-// Removed Tooltip imports
 
 interface FullLedgerViewProps {
   players: Player[];
@@ -48,7 +47,6 @@ export function FullLedgerView({
   const [editingLedgerItem, setEditingLedgerItem] = useState<{ player: Player; transaction: Transaction } | null>(null);
 
   const handleOpenEditDialog = (player: Player, transaction: Transaction) => {
-    // P2P check removed, dialog will handle general disable state
     setEditingLedgerItem({ player, transaction });
   };
 
@@ -92,7 +90,6 @@ export function FullLedgerView({
           )}
         </CardHeader>
         <CardContent className="p-0">
-          {/* TooltipProvider removed */}
           <Accordion type="multiple" className="w-full">
             {sortedPlayers.map((player) => {
               const sortedTransactions = [...player.transactions].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -139,16 +136,13 @@ export function FullLedgerView({
                           </TableHeader>
                           <TableBody>
                             {sortedTransactions.map((tx) => {
-                              // isP2P check removed
                               const arePlayerActionsDisabled = player.departureStatus !== 'active' || isSessionEnded;
-                              const canEditOrDelete = !arePlayerActionsDisabled; // Simplified
 
                               return (
                               <TableRow key={tx.id} className={cn(arePlayerActionsDisabled && "opacity-70")}>
                                 <TableCell className="font-medium pl-4 sm:pl-6">
                                   <div className="flex items-center gap-1.5">
                                     {tx.description}
-                                    {/* P2P Info icon and Tooltip removed */}
                                   </div>
                                 </TableCell>
                                 <TableCell
@@ -169,7 +163,7 @@ export function FullLedgerView({
                                       size="icon"
                                       className="h-7 w-7"
                                       onClick={() => handleOpenEditDialog(player, tx)}
-                                      disabled={!canEditOrDelete}
+                                      disabled={arePlayerActionsDisabled}
                                       aria-label="Edit transaction"
                                     >
                                       <Edit3 className="h-4 w-4" />
@@ -180,7 +174,7 @@ export function FullLedgerView({
                                           variant="ghost"
                                           size="icon"
                                           className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                          disabled={!canEditOrDelete}
+                                          disabled={arePlayerActionsDisabled}
                                           aria-label="Delete transaction"
                                         >
                                           <Trash2 className="h-4 w-4" />
@@ -217,7 +211,6 @@ export function FullLedgerView({
               );
             })}
           </Accordion>
-          {/* TooltipProvider removed */}
         </CardContent>
       </Card>
 

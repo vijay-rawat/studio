@@ -74,17 +74,12 @@ export default function PokerTrackerPage() {
     }
   }, [players, isSessionEnded, sessionHistory, isClient, sessionStartTime]);
   
-  const mostRecentSessionForStats = useMemo(() => {
-    // If current session is ended, it takes precedence for display until reset.
-    if (isSessionEnded && players.length > 0) {
-      return players;
-    }
-    // After reset, if history exists, show the last completed session.
+  const lastCompletedSessionForStats = useMemo(() => {
     if (sessionHistory.length > 0) {
       return sessionHistory[0].players;
     }
     return null;
-  }, [players, isSessionEnded, sessionHistory]);
+  }, [sessionHistory]);
 
   const handleAddPlayer = (name: string) => {
     if (isSessionEnded) {
@@ -247,26 +242,32 @@ export default function PokerTrackerPage() {
       }
       return p;
     });
+    
+    const finalSessionPlayers = [...updatedPlayers];
 
-    setPlayers(updatedPlayers);
+    // Archive the session immediately upon ending it
+    const newSession: GameSession = {
+      id: crypto.randomUUID(),
+      startTime: sessionStartTime,
+      endTime: new Date().toISOString(),
+      players: finalSessionPlayers,
+    };
+    setSessionHistory(prev => [newSession, ...prev]);
+
     setIsSessionEnded(true);
-    toast({ title: "Session Ended", description: `Game session concluded. ${playersAutoCashedOut} active player(s) automatically cashed out. Final stats are now available.` });
+    // We don't reset players here anymore. Reset is a separate action.
+    setPlayers(finalSessionPlayers);
+
+    toast({ title: "Session Ended & Archived", description: `Game session concluded and saved to history. ${playersAutoCashedOut} player(s) automatically cashed out.` });
   };
 
 
   const handleResetGame = () => {
-    if (isSessionEnded && players.length > 0) {
-      // Archive the completed session
-      const newSession: GameSession = {
-        id: crypto.randomUUID(),
-        startTime: sessionStartTime,
-        endTime: new Date().toISOString(),
-        players: players,
-      };
-      setSessionHistory(prev => [newSession, ...prev]);
-      toast({ title: "Game Archived", description: "The completed session has been saved to history." });
-    } else {
-      toast({ title: "Game Reset", description: "The current game state has been cleared.", variant: "destructive" });
+    // Confirmation dialog handles warning. This function just does the work.
+    if (players.length > 0 && !isSessionEnded) {
+       toast({ title: "Game Reset", description: "The active game state has been cleared.", variant: "destructive" });
+    } else if (isSessionEnded) {
+       toast({ title: "New Game Started", description: "The previous session's stats are visible. A new game has begun."});
     }
 
     // Reset current session state
@@ -359,6 +360,7 @@ export default function PokerTrackerPage() {
           <TabsContent value="game-view">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               <div className="lg:col-span-8 space-y-8">
+                
                 {!isSessionEnded && <AddPlayerForm onAddPlayer={handleAddPlayer} isSessionEnded={isSessionEnded} />}
 
                 {players.length > 0 && (
@@ -374,14 +376,14 @@ export default function PokerTrackerPage() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>End Game Session?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This will finalize the game. Any active players will be automatically cashed out based on their current balance (chip value cannot be negative).
-                              You won't be able to add new players or transactions. Are you sure?
+                              This will finalize the game and archive it to history. Any active players will be automatically cashed out.
+                              You won't be able to add new players or transactions after this. Are you sure?
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction onClick={handleEndSession} className="bg-accent hover:bg-accent/90 text-accent-foreground">
-                              Yes, End Session
+                              Yes, End & Archive
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -390,20 +392,23 @@ export default function PokerTrackerPage() {
                      <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="destructive" size="sm">
-                          <Trash2 className="mr-2 h-4 w-4" /> Reset Game
+                          <Trash2 className="mr-2 h-4 w-4" /> {isSessionEnded ? "Start New Game" : "Reset Current Game"}
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This action cannot be undone. If the session has been ended, it will be archived. Otherwise, all current data will be cleared.
+                            {isSessionEnded 
+                              ? "This will clear the table and start a new game. The session you just finished is already saved in history."
+                              : "This action cannot be undone. All current unsaved player data will be permanently cleared."
+                            }
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction onClick={handleResetGame} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
-                            {isSessionEnded ? "Yes, Archive and Reset" : "Yes, Reset Game"}
+                            {isSessionEnded ? "Yes, Start New Game" : "Yes, Reset Game"}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
@@ -411,13 +416,7 @@ export default function PokerTrackerPage() {
                   </div>
                 )}
 
-                {mostRecentSessionForStats && (
-                  <>
-                    <SessionEndedStatsDisplay players={mostRecentSessionForStats} />
-                    <SessionEndGraphDisplay players={mostRecentSessionForStats} />
-                  </>
-                )}
-
+                {/* Always show PlayersTable if there are players and session is not ended */}
                 {!isSessionEnded && players.length > 0 && (
                   <PlayersTable
                     players={players}
@@ -432,7 +431,8 @@ export default function PokerTrackerPage() {
                   />
                 )}
 
-                {players.length === 0 && !isSessionEnded && !mostRecentSessionForStats ? (
+                {/* Show placeholder if game hasn't started */}
+                {players.length === 0 && !isSessionEnded && (
                   <Card className="mt-8 shadow-xl border-border/50">
                     <CardContent className="p-10 text-center flex flex-col items-center justify-center min-h-[200px]">
                       <Users className="h-20 w-20 text-muted-foreground/50 mx-auto mb-6" />
@@ -440,15 +440,16 @@ export default function PokerTrackerPage() {
                       <p className="text-sm text-muted-foreground/80">Use the form above to add players and start tracking balances.</p>
                     </CardContent>
                   </Card>
-                ) : players.length === 0 && isSessionEnded && !mostRecentSessionForStats ? (
-                   <Card className="mt-8 shadow-xl border-border/50">
-                    <CardContent className="p-10 text-center flex flex-col items-center justify-center min-h-[200px]">
-                      <Users className="h-20 w-20 text-muted-foreground/50 mx-auto mb-6" />
-                      <p className="text-2xl font-semibold text-muted-foreground mb-2">Session Ended</p>
-                      <p className="text-sm text-muted-foreground/80">No player data was recorded for this session. Reset to start a new game.</p>
-                    </CardContent>
-                  </Card>
-                ) : null}
+                )}
+
+                {/* Show last session stats if available */}
+                {(isSessionEnded || lastCompletedSessionForStats) && (
+                  <div className='space-y-8'>
+                    <SessionEndedStatsDisplay players={isSessionEnded ? players : lastCompletedSessionForStats!} />
+                    <SessionEndGraphDisplay players={isSessionEnded ? players : lastCompletedSessionForStats!} />
+                  </div>
+                )}
+                
               </div>
 
               <aside className="lg:col-span-4 lg:sticky lg:top-8">
