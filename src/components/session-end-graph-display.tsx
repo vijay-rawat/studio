@@ -66,7 +66,7 @@ export function SessionEndGraphDisplay({ players }: SessionEndGraphDisplayProps)
   };
 
   const calculateFinalNetResult = (player: Player): number => {
-    const liveBalanceAllTxs = player.initialBalance + player.transactions.reduce((sum, tx) => sum + tx.amount, 0);
+    const liveBalanceAllTxs = player.initialBalance + player.transactions.filter(t => t.action !== 'deleted').reduce((sum, tx) => sum + tx.amount, 0);
     return (player.cashedOutAmount ?? 0) + liveBalanceAllTxs;
   };
 
@@ -129,7 +129,7 @@ export function SessionEndGraphDisplay({ players }: SessionEndGraphDisplayProps)
         } else {
           let currentBalance = player.initialBalance;
           player.transactions
-            .filter(tx => new Date(tx.timestamp).getTime() <= ts)
+            .filter(tx => tx.action !== 'deleted' && new Date(tx.timestamp).getTime() <= ts)
             .forEach(tx => {
               currentBalance += tx.amount;
             });

@@ -64,7 +64,7 @@ export function PlayersTable({
   const { toast } = useToast();
 
   const getPlayerBalanceInfo = (player: Player) => {
-    const liveBalance = player.initialBalance + player.transactions.reduce((sum, tx) => sum + tx.amount, 0);
+    const liveBalance = player.initialBalance + player.transactions.filter(t => t.action !== 'deleted').reduce((sum, tx) => sum + tx.amount, 0);
     const isCashedOut = player.departureStatus !== 'active' && player.cashedOutAmount !== undefined;
     
     if (isCashedOut || (isSessionEnded && player.cashedOutAmount !== undefined)) {

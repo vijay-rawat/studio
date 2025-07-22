@@ -56,7 +56,8 @@ export function ManageTransactionsDialog({
 
   const sortedTransactions = useMemo(() => {
     if (!player || !player.transactions) return [];
-    return [...player.transactions].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    const activeTransactions = player.transactions.filter(tx => tx.action !== 'deleted');
+    return [...activeTransactions].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   }, [player]);
 
   useEffect(() => {
@@ -149,16 +150,16 @@ export function ManageTransactionsDialog({
             Manage Transactions for {player.name}
           </DialogTitle>
           <DialogDescription>
-            View, add, edit, or delete bank transactions.
+            View, add, edit, or delete bank transactions. Deleted items are logged in the Full Ledger.
             {isActionsDisabled && " (Actions are disabled as player/session is finalized)"}
           </DialogDescription>
         </DialogHeader>
         <div className="flex-grow flex flex-col py-4 space-y-4 overflow-y-auto pr-2">
           
           <div className="space-y-3">
-            <h4 className="font-semibold text-base text-foreground/90">Transaction History:</h4>
+            <h4 className="font-semibold text-base text-foreground/90">Active Transaction History:</h4>
             {sortedTransactions.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">No transactions recorded.</p>
+              <p className="text-sm text-muted-foreground py-4 text-center">No active transactions recorded.</p>
             ) : currentTransactions.length === 0 && sortedTransactions.length > 0 ? (
                <p className="text-sm text-muted-foreground py-4 text-center">No transactions on this page.</p>
             ) : (
@@ -188,7 +189,7 @@ export function ManageTransactionsDialog({
                             <AlertDialogTxHeader>
                               <AlertDialogTxTitle>Delete Transaction?</AlertDialogTxTitle>
                               <AlertDialogDescription>
-                                Are you sure you want to delete transaction: {tx.description} ({tx.amount.toFixed(2)} Rs.)? This cannot be undone.
+                                Are you sure you want to delete transaction: {tx.description} ({tx.amount.toFixed(2)} Rs.)? This will be logged and cannot be fully undone.
                               </AlertDialogDescription>
                             </AlertDialogTxHeader>
                             <AlertDialogTxFooter>

@@ -3,16 +3,8 @@
 
 import type * as React from 'react';
 import { useState, useMemo } from 'react';
-import type { Player, Transaction } from '@/types';
+import type { Player, Transaction, TransactionState } from '@/types';
 import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import {
@@ -21,7 +13,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { Edit3, Trash2, PlusCircle, BookOpenText, User, Users } from 'lucide-react';
+import { Edit3, Trash2, PlusCircle, BookOpenText, User, Users, Undo2, History, CheckCircle, Pencil, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { GlobalAddTransactionDialog } from './global-add-transaction-dialog';
@@ -35,6 +27,57 @@ interface FullLedgerViewProps {
   onDeleteTransaction: (playerId: string, transactionId: string) => void;
   isSessionEnded: boolean;
 }
+
+const ActionIcon = ({ action }: { action: Transaction['action'] }) => {
+  switch (action) {
+    case 'created':
+      return <CheckCircle className="h-4 w-4 text-emerald-500" />;
+    case 'edited':
+      return <Pencil className="h-4 w-4 text-amber-500" />;
+    case 'deleted':
+      return <XCircle className="h-4 w-4 text-destructive" />;
+    default:
+      return null;
+  }
+};
+
+const TransactionHistory = ({ tx }: { tx: Transaction }) => {
+  const allStates: (TransactionState & { isCurrent: boolean })[] = [
+    ...tx.previousStates.map(s => ({ ...s, isCurrent: false })),
+  ];
+  if (tx.action !== 'deleted') {
+      allStates.push({
+        amount: tx.amount,
+        description: tx.description,
+        timestamp: tx.timestamp,
+        isCurrent: true,
+      });
+  }
+
+  const sortedStates = allStates.sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+  return (
+    <div className="pl-6 pr-2 py-2 space-y-3 bg-muted/40 border-l-2 border-primary/20">
+      {sortedStates.map((state, index) => (
+        <div key={index} className="text-xs relative">
+          <div className={cn("flex items-start justify-between", state.isCurrent && "font-semibold")}>
+            <div className="flex-1">
+              <p className="text-muted-foreground">{format(new Date(state.timestamp), "MMM d, p")}</p>
+              <p className="text-foreground">{state.description}</p>
+            </div>
+            <p className={cn("font-mono", state.amount > 0 ? "text-emerald-600" : "text-destructive")}>
+              {state.amount > 0 ? '+' : ''}{state.amount.toFixed(2)} Rs.
+            </p>
+          </div>
+        </div>
+      ))}
+      <p className="text-xs text-muted-foreground pt-1 pl-1">
+        Initial creation on {format(new Date(tx.previousStates[0]?.timestamp || tx.timestamp), "MMM d, p")}
+      </p>
+    </div>
+  );
+};
+
 
 export function FullLedgerView({
   players,
@@ -81,7 +124,7 @@ export function FullLedgerView({
                 <BookOpenText className="mr-3 h-6 w-6 text-primary" />
                 Full Game Ledger
             </CardTitle>
-            <CardDescription>View all transactions, grouped by player. Expand a player to see their history.</CardDescription>
+            <CardDescription>A complete log of all transactions. Expand a transaction to see its full history.</CardDescription>
           </div>
           {!isSessionEnded && (
             <Button onClick={() => setIsAddTransactionDialogOpen(true)} size="sm">
@@ -93,7 +136,7 @@ export function FullLedgerView({
           <Accordion type="multiple" className="w-full">
             {sortedPlayers.map((player) => {
               const sortedTransactions = [...player.transactions].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-              const liveBalance = player.initialBalance + player.transactions.reduce((sum, tx) => sum + tx.amount, 0);
+              const liveBalance = player.initialBalance + player.transactions.filter(t => t.action !== 'deleted').reduce((sum, tx) => sum + tx.amount, 0);
 
               return (
                 <AccordionItem value={player.id} key={player.id}>
@@ -103,7 +146,7 @@ export function FullLedgerView({
                         <User className="h-5 w-5 text-primary/80" />
                         <span className="font-medium">{player.name}</span>
                         <Badge variant="outline" className="font-normal text-xs px-1.5 py-0.5">
-                          {sortedTransactions.length} txs
+                          {sortedTransactions.length} total records
                         </Badge>
                       </div>
                       <span
@@ -118,93 +161,92 @@ export function FullLedgerView({
                       </span>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="bg-muted/20">
+                  <AccordionContent className="bg-muted/20 p-0">
                     {sortedTransactions.length === 0 ? (
                        <div className="px-6 py-8 text-center">
                         <p className="text-muted-foreground">No transactions recorded for {player.name}.</p>
                       </div>
                     ) : (
-                      <div className="overflow-x-auto p-2 sm:p-0">
-                        <Table className="bg-card">
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead className="pl-4 sm:pl-6">Description</TableHead>
-                              <TableHead className="text-right">Amount (Rs.)</TableHead>
-                              <TableHead>Timestamp</TableHead>
-                              <TableHead className="text-right pr-4 sm:pr-6 w-[100px]">Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {sortedTransactions.map((tx) => {
-                              const arePlayerActionsDisabled = player.departureStatus !== 'active' || isSessionEnded;
+                      <Accordion type="multiple" className="w-full bg-card">
+                         {sortedTransactions.map((tx) => {
+                           const arePlayerActionsDisabled = player.departureStatus !== 'active' || isSessionEnded;
+                           const isDeleted = tx.action === 'deleted';
 
-                              return (
-                              <TableRow key={tx.id} className={cn(arePlayerActionsDisabled && "opacity-70")}>
-                                <TableCell className="font-medium pl-4 sm:pl-6">
-                                  <div className="flex items-center gap-1.5">
-                                    {tx.description}
-                                  </div>
-                                </TableCell>
-                                <TableCell
-                                  className={cn(
-                                    "text-right font-semibold",
-                                    tx.amount > 0 ? "text-emerald-500" : "text-destructive"
-                                  )}
-                                >
-                                  {tx.amount > 0 ? '+' : ''}{tx.amount.toFixed(2)}
-                                </TableCell>
-                                <TableCell className="text-sm text-muted-foreground">
-                                  {format(new Date(tx.timestamp), "MMM d, p")}
-                                </TableCell>
-                                <TableCell className="text-right pr-4 sm:pr-6">
-                                  <div className="flex gap-1 justify-end">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-7 w-7"
-                                      onClick={() => handleOpenEditDialog(player, tx)}
-                                      disabled={arePlayerActionsDisabled}
-                                      aria-label="Edit transaction"
-                                    >
-                                      <Edit3 className="h-4 w-4" />
-                                    </Button>
-                                    <AlertDialog>
-                                      <AlertDialogTrigger asChild>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                          disabled={arePlayerActionsDisabled}
-                                          aria-label="Delete transaction"
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                      </AlertDialogTrigger>
-                                      <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                          <AlertDialogTitle>Delete Transaction?</AlertDialogTitle>
-                                          <AlertDialogDescription>
-                                            Are you sure you want to delete this transaction for {player.name}: "{tx.description}" ({tx.amount} Rs.)? This cannot be undone.
-                                          </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                          <AlertDialogAction
-                                            onClick={() => onDeleteTransaction(player.id, tx.id)}
-                                            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-                                          >
-                                            Delete
-                                          </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                      </AlertDialogContent>
-                                    </AlertDialog>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            )})}
-                          </TableBody>
-                        </Table>
-                      </div>
+                           return (
+                             <AccordionItem value={tx.id} key={tx.id} className="border-b last:border-b-0">
+                               <AccordionTrigger className={cn("px-4 py-3 hover:no-underline text-sm w-full", isDeleted && "opacity-50 bg-destructive/5 hover:bg-destructive/10")}>
+                                 <div className="flex justify-between items-center w-full">
+                                    <div className="flex items-center gap-3">
+                                        <ActionIcon action={tx.action} />
+                                        <div className="text-left">
+                                            <p className={cn("font-medium", isDeleted && "line-through")}>{tx.description}</p>
+                                            <p className="text-xs text-muted-foreground">Last action: {format(new Date(tx.timestamp), "MMM d, p")}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                      <span className={cn(
+                                          "font-semibold",
+                                          tx.amount > 0 && !isDeleted ? "text-emerald-500" : "",
+                                          tx.amount < 0 && !isDeleted ? "text-destructive" : "",
+                                          isDeleted && "text-muted-foreground"
+                                      )}>
+                                          {isDeleted ? 'Deleted' : `${tx.amount > 0 ? '+' : ''}${tx.amount.toFixed(2)} Rs.`}
+                                      </span>
+                                      {!isDeleted && (
+                                        <div className="flex gap-1 justify-end">
+                                            <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7"
+                                            onClick={(e) => { e.stopPropagation(); handleOpenEditDialog(player, tx); }}
+                                            disabled={arePlayerActionsDisabled}
+                                            aria-label="Edit transaction"
+                                            >
+                                            <Edit3 className="h-4 w-4" />
+                                            </Button>
+                                            <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                disabled={arePlayerActionsDisabled}
+                                                aria-label="Delete transaction"
+                                                onClick={(e) => e.stopPropagation()}
+                                                >
+                                                <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                <AlertDialogTitle>Delete Transaction?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Are you sure you want to delete this transaction for {player.name}: "{tx.description}"? This action will be logged and cannot be fully undone.
+                                                </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction
+                                                    onClick={() => onDeleteTransaction(player.id, tx.id)}
+                                                    className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                                                >
+                                                    Delete
+                                                </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                            </AlertDialog>
+                                        </div>
+                                      )}
+                                    </div>
+                                 </div>
+                               </AccordionTrigger>
+                               <AccordionContent>
+                                 <TransactionHistory tx={tx} />
+                               </AccordionContent>
+                             </AccordionItem>
+                           );
+                         })}
+                      </Accordion>
                     )}
                   </AccordionContent>
                 </AccordionItem>

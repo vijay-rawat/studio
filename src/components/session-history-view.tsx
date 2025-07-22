@@ -15,7 +15,7 @@ interface SessionHistoryViewProps {
 }
 
 const calculateFinalNetResult = (player: Player): number => {
-    const liveBalance = player.initialBalance + player.transactions.reduce((sum, tx) => sum + tx.amount, 0);
+    const liveBalance = player.initialBalance + player.transactions.filter(t => t.action !== 'deleted').reduce((sum, tx) => sum + tx.amount, 0);
     return (player.cashedOutAmount ?? 0) + liveBalance;
 };
 
@@ -105,7 +105,7 @@ export function SessionHistoryView({ sessions }: SessionHistoryViewProps) {
                                 {player.finalNetResult >= 0 ? '+' : ''}{player.finalNetResult.toFixed(2)} Rs.
                                </div>
                                <p className="text-xs text-muted-foreground">
-                                {player.transactions.length} transactions recorded
+                                {player.transactions.length} transaction records
                                </p>
                             </CardContent>
                           </Card>
@@ -121,5 +121,3 @@ export function SessionHistoryView({ sessions }: SessionHistoryViewProps) {
     </Card>
   );
 }
-
-    

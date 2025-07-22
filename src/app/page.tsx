@@ -129,6 +129,8 @@ export default function PokerTrackerPage() {
       amount,
       description,
       timestamp: new Date().toISOString(),
+      action: 'created',
+      previousStates: [],
     };
     setPlayers(prev => prev.map(p =>
       p.id === playerId
@@ -153,11 +155,24 @@ export default function PokerTrackerPage() {
       if (p.id === playerId) {
         return {
           ...p,
-          transactions: p.transactions.map(tx =>
-            tx.id === transactionId
-              ? { ...tx, amount: newAmount, description: newDescription, timestamp: new Date().toISOString() }
-              : tx
-          ),
+          transactions: p.transactions.map(tx => {
+            if (tx.id === transactionId) {
+              const previousState = {
+                amount: tx.amount,
+                description: tx.description,
+                timestamp: tx.timestamp,
+              };
+              return { 
+                ...tx,
+                amount: newAmount,
+                description: newDescription,
+                timestamp: new Date().toISOString(),
+                action: 'edited' as 'edited',
+                previousStates: [...tx.previousStates, previousState],
+              };
+            }
+            return tx;
+          }),
         };
       }
       return p;
@@ -176,11 +191,30 @@ export default function PokerTrackerPage() {
       toast({ title: "Player Finalized", description: `Cannot delete transaction for ${targetPlayer.name} as they have already cashed out.`, variant: "destructive" });
       return;
     }
-    setPlayers(prev => prev.map(p =>
-      p.id === playerId
-        ? { ...p, transactions: p.transactions.filter(tx => tx.id !== transactionId) }
-        : p
-    ));
+    setPlayers(prev => prev.map(p => {
+      if (p.id === playerId) {
+        return {
+          ...p,
+          transactions: p.transactions.map(tx => {
+            if (tx.id === transactionId) {
+              const finalState = {
+                amount: tx.amount,
+                description: tx.description,
+                timestamp: tx.timestamp,
+              };
+              return {
+                ...tx,
+                action: 'deleted' as 'deleted',
+                timestamp: new Date().toISOString(),
+                previousStates: [...tx.previousStates, finalState],
+              };
+            }
+            return tx;
+          }),
+        };
+      }
+      return p;
+    }));
   };
 
   const handleDeletePlayer = (playerId: string) => {
@@ -225,7 +259,7 @@ export default function PokerTrackerPage() {
     updatedPlayers = updatedPlayers.map(p => {
       if (p.departureStatus === 'active') {
         playersAutoCashedOut++;
-        const liveBalance = p.initialBalance + p.transactions.reduce((sum, tx) => sum + tx.amount, 0);
+        const liveBalance = p.initialBalance + p.transactions.filter(t => t.action !== 'deleted').reduce((sum, tx) => sum + tx.amount, 0);
         const effectiveCashOutAmount = Math.max(0, liveBalance);
         return {
           ...p,
@@ -267,13 +301,13 @@ export default function PokerTrackerPage() {
     setActiveTab("game-view");
   }
 
-  const justEndedSession = useMemo(() => {
+  const justEndedSessionPlayers = useMemo(() => {
     if (isSessionEnded && sessionHistory.length > 0) {
       // The session just ended is the most recent one in history.
-      return sessionHistory[0];
+      return sessionHistory[0].players;
     }
-    return null;
-  }, [isSessionEnded, sessionHistory]);
+    return players; // Fallback to current players if no history or not ended
+  }, [isSessionEnded, sessionHistory, players]);
 
   if (!isClient) {
     return (
@@ -437,25 +471,17 @@ export default function PokerTrackerPage() {
                   </Card>
                 ) : null }
                 
-                {isSessionEnded && justEndedSession ? (
+                {isSessionEnded ? (
                    <div className="space-y-8">
-                      <SessionEndedStatsDisplay players={justEndedSession.players} />
-                      <SessionEndGraphDisplay players={justEndedSession.players} />
+                      <SessionEndedStatsDisplay players={justEndedSessionPlayers} />
+                      <SessionEndGraphDisplay players={justEndedSessionPlayers} />
                    </div>
-                ) : isSessionEnded ? (
-                   <Card className="mt-8 shadow-xl border-border/50">
-                    <CardContent className="p-10 text-center flex flex-col items-center justify-center min-h-[200px]">
-                      <Users className="h-20 w-20 text-primary/50 mx-auto mb-6" />
-                      <p className="text-2xl font-semibold text-muted-foreground mb-2">Session Ended</p>
-                      <p className="text-sm text-muted-foreground/80">Click 'Start New Game' to begin again. Find old games in 'Session History'.</p>
-                    </CardContent>
-                  </Card>
                 ) : null}
 
               </div>
 
               <aside className="lg:col-span-4 lg:sticky lg:top-8">
-                {players.length > 0 && <SummaryDisplay players={players} isSessionEnded={isSessionEnded} />}
+                {players.length > 0 && <SummaryDisplay players={justEndedSessionPlayers} isSessionEnded={isSessionEnded} />}
               </aside>
             </div>
           </TabsContent>
@@ -464,8 +490,8 @@ export default function PokerTrackerPage() {
             <FullLedgerView
               players={players}
               onAddTransaction={handleAddTransaction}
-              onEditTransaction={handleEditTransaction}
-              onDeleteTransaction={handleDeleteTransaction}
+              onEditTransaction={onEditTransaction}
+              onDeleteTransaction={onDeleteTransaction}
               isSessionEnded={isSessionEnded}
             />
           </TabsContent>

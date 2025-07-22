@@ -28,7 +28,7 @@ export function SessionEndedStatsDisplay({ players }: SessionEndedStatsDisplayPr
 
   const playerStats: PlayerStat[] = useMemo(() => {
     return players.map(p => {
-      const liveBalance = p.initialBalance + p.transactions.reduce((sum, tx) => sum + tx.amount, 0);
+      const liveBalance = p.initialBalance + p.transactions.filter(t => t.action !== 'deleted').reduce((sum, tx) => sum + tx.amount, 0);
       const finalNetResult = (p.cashedOutAmount ?? 0) + liveBalance;
       const displayNetResult = divisionEnabled ? finalNetResult / 2 : finalNetResult;
       return { ...p, name: p.name, finalNetResult, displayNetResult };

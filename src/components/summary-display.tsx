@@ -32,7 +32,7 @@ export function SummaryDisplay({ players, isSessionEnded }: SummaryDisplayProps)
     let sessionNetPlayerResultsSum = 0;
 
     players.forEach(player => {
-      const liveBalance = player.initialBalance + player.transactions.reduce((sum, tx) => sum + tx.amount, 0);
+      const liveBalance = player.initialBalance + player.transactions.filter(t => t.action !== 'deleted').reduce((sum, tx) => sum + tx.amount, 0);
       
       if (player.departureStatus === 'active' && !isSessionEnded) {
         if (liveBalance < 0) {
@@ -67,7 +67,7 @@ export function SummaryDisplay({ players, isSessionEnded }: SummaryDisplayProps)
     return players.reduce((sum, player) => {
       let playerBuyIn = Math.abs(player.initialBalance); 
       player.transactions.forEach(tx => {
-        if (tx.amount > 0 && (tx.description.toLowerCase().includes('buy-in') || tx.description.toLowerCase().includes('rebuy'))) {
+        if (tx.action !== 'deleted' && tx.amount > 0 && (tx.description.toLowerCase().includes('buy-in') || tx.description.toLowerCase().includes('rebuy'))) {
           playerBuyIn += tx.amount;
         }
       });
@@ -230,5 +230,3 @@ function valueSuffix(value: number, suffix: string): string {
   if (value !== 0 && (suffix.toLowerCase().includes("profiting") || suffix.toLowerCase().includes("loosing") || suffix.toLowerCase().includes("profit") || suffix.toLowerCase().includes("loss"))) return suffix;
   return "";
 }
-
-    

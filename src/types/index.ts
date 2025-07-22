@@ -1,9 +1,20 @@
 
+
+export type TransactionAction = 'created' | 'edited' | 'deleted';
+
+export interface TransactionState {
+  amount: number;
+  description: string;
+  timestamp: string;
+}
+
 export interface Transaction {
   id: string;
-  amount: number; // Positive for money given to bank, negative for money taken from bank
-  description: string;
-  timestamp: string; // ISO string for date
+  amount: number; // Current amount
+  description: string; // Current description
+  timestamp: string; // Timestamp of last action
+  action: TransactionAction;
+  previousStates: TransactionState[]; // Log of previous states
 }
 
 export interface Player {
@@ -22,5 +33,3 @@ export interface GameSession {
   endTime: string;
   players: Player[];
 }
-
-    
