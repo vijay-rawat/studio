@@ -124,14 +124,18 @@ export default function PokerTrackerPage() {
       toast({ title: "Player Finalized", description: `Cannot add bank transaction for ${targetPlayer.name} as they have already cashed out.`, variant: "destructive" });
       return;
     }
+    
     const newTransaction: Transaction = {
       id: crypto.randomUUID(),
       amount,
       description,
       timestamp: new Date().toISOString(),
       action: 'created',
-      previousStates: [],
+      previousStates: [
+        { amount, description, timestamp: new Date().toISOString() } // Initial state
+      ],
     };
+
     setPlayers(prev => prev.map(p =>
       p.id === playerId
         ? { ...p, transactions: [...p.transactions, newTransaction] }
@@ -205,6 +209,8 @@ export default function PokerTrackerPage() {
               return {
                 ...tx,
                 action: 'deleted' as 'deleted',
+                amount: 0, // Set amount to 0 or something neutral for deleted tx
+                description: `DELETED: ${tx.description}`,
                 timestamp: new Date().toISOString(),
                 previousStates: [...tx.previousStates, finalState],
               };
@@ -303,10 +309,9 @@ export default function PokerTrackerPage() {
 
   const justEndedSessionPlayers = useMemo(() => {
     if (isSessionEnded && sessionHistory.length > 0) {
-      // The session just ended is the most recent one in history.
       return sessionHistory[0].players;
     }
-    return players; // Fallback to current players if no history or not ended
+    return players;
   }, [isSessionEnded, sessionHistory, players]);
 
   if (!isClient) {
@@ -511,5 +516,4 @@ export default function PokerTrackerPage() {
       </footer>
     </div>
   );
-
-    
+}

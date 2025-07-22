@@ -13,7 +13,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { Edit3, Trash2, PlusCircle, BookOpenText, User, Users, Undo2, History, CheckCircle, Pencil, XCircle } from 'lucide-react';
+import { Edit3, Trash2, PlusCircle, BookOpenText, User, Users, Undo2, History, CheckCircle, Pencil, XCircle, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { GlobalAddTransactionDialog } from './global-add-transaction-dialog';
@@ -42,38 +42,95 @@ const ActionIcon = ({ action }: { action: Transaction['action'] }) => {
 };
 
 const TransactionHistory = ({ tx }: { tx: Transaction }) => {
-  const allStates: (TransactionState & { isCurrent: boolean })[] = [
-    ...tx.previousStates.map(s => ({ ...s, isCurrent: false })),
-  ];
-  if (tx.action !== 'deleted') {
-      allStates.push({
-        amount: tx.amount,
-        description: tx.description,
-        timestamp: tx.timestamp,
-        isCurrent: true,
-      });
+  if (!tx.previousStates || tx.previousStates.length === 0) {
+    return (
+        <div className="pl-6 pr-2 py-4 bg-muted/40 border-l-2 border-primary/20 text-center">
+            <p className="text-xs text-muted-foreground">No previous history for this transaction.</p>
+        </div>
+    );
   }
 
-  const sortedStates = allStates.sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  const allStates: (TransactionState & { isCurrent?: boolean, isCreation?: boolean })[] = [
+    ...tx.previousStates
+  ];
+
+  if (tx.action !== 'deleted') {
+    allStates.push({
+      amount: tx.amount,
+      description: tx.description,
+      timestamp: tx.timestamp,
+      isCurrent: true,
+    });
+  }
+
+  const sortedStates = allStates.sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  
+  const creationState = sortedStates[0];
+  const subsequentStates = sortedStates.slice(1);
 
   return (
-    <div className="pl-6 pr-2 py-2 space-y-3 bg-muted/40 border-l-2 border-primary/20">
-      {sortedStates.map((state, index) => (
-        <div key={index} className="text-xs relative">
-          <div className={cn("flex items-start justify-between", state.isCurrent && "font-semibold")}>
+    <div className="pl-6 pr-4 py-3 space-y-3 bg-muted/40 border-l-2 border-primary/20">
+       {/* Creation Event */}
+       <div className="text-xs relative">
+          <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-muted-foreground">{format(new Date(state.timestamp), "MMM d, p")}</p>
-              <p className="text-foreground">{state.description}</p>
+              <p className="text-muted-foreground">{format(new Date(creationState.timestamp), "MMM d, p")} - <span className="text-emerald-500 font-semibold">Created</span></p>
+              <p className="text-foreground">{creationState.description}</p>
             </div>
-            <p className={cn("font-mono", state.amount > 0 ? "text-emerald-600" : "text-destructive")}>
-              {state.amount > 0 ? '+' : ''}{state.amount.toFixed(2)} Rs.
+            <p className={cn("font-mono", creationState.amount >= 0 ? "text-emerald-600" : "text-destructive")}>
+              {creationState.amount >= 0 ? '+' : ''}{creationState.amount.toFixed(2)} Rs.
             </p>
           </div>
         </div>
-      ))}
-      <p className="text-xs text-muted-foreground pt-1 pl-1">
-        Initial creation on {format(new Date(tx.previousStates[0]?.timestamp || tx.timestamp), "MMM d, p")}
-      </p>
+
+      {/* Subsequent Edit/Delete Events */}
+      {subsequentStates.map((state, index) => {
+        const prevState = sortedStates[index]; // The state right before the current one
+        const amountChanged = prevState.amount !== state.amount;
+        const descriptionChanged = prevState.description !== state.description;
+
+        return (
+          <div key={index} className="text-xs relative">
+            <div className="flex items-start justify-between">
+              <div className="flex-1 space-y-0.5">
+                 <p className="text-muted-foreground">
+                    {format(new Date(state.timestamp), "MMM d, p")} - 
+                    <span className={cn("font-semibold", state.isCurrent ? "text-amber-500" : "text-amber-500")}> Edited</span>
+                </p>
+                {descriptionChanged && (
+                    <p className="text-foreground italic">Description changed to "{state.description}"</p>
+                )}
+                {amountChanged && (
+                    <div className="flex items-center gap-1.5">
+                        <p className="text-foreground">Amount changed from</p>
+                        <p className={cn("font-mono font-semibold", prevState.amount >= 0 ? "text-emerald-600" : "text-destructive")}>
+                           {prevState.amount.toFixed(2)}
+                        </p>
+                        <ArrowRight className="h-3 w-3 text-muted-foreground"/>
+                         <p className={cn("font-mono font-semibold", state.amount >= 0 ? "text-emerald-600" : "text-destructive")}>
+                           {state.amount.toFixed(2)} Rs.
+                        </p>
+                    </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      })}
+
+      {tx.action === 'deleted' && (
+         <div className="text-xs relative">
+            <div className="flex items-start justify-between">
+                <div className="flex-1">
+                <p className="text-muted-foreground">{format(new Date(tx.timestamp), "MMM d, p")} - <span className="text-destructive font-semibold">Deleted</span></p>
+                <p className="text-muted-foreground italic line-through">{tx.previousStates.slice(-1)[0].description}</p>
+                </div>
+                <p className="font-mono text-destructive">
+                    -{tx.previousStates.slice(-1)[0].amount.toFixed(2)} Rs.
+                </p>
+            </div>
+        </div>
+      )}
     </div>
   );
 };
