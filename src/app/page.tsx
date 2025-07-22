@@ -456,7 +456,7 @@ export default function PokerTrackerPage() {
                     onUpdateInitialBalance={handleUpdateInitialBalance}
                     onAddTransaction={handleAddTransaction}
                     onEditTransaction={handleEditTransaction}
-                    onDeleteTransaction={handleDeleteTransaction}
+                    onDeleteTransaction={onDeleteTransaction}
                     onDeletePlayer={handleDeletePlayer}
                     onCashOutPlayer={handleCashOutPlayer}
                     isSessionEnded={isSessionEnded}
