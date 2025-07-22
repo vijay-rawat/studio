@@ -490,7 +490,7 @@ export default function PokerTrackerPage() {
             <FullLedgerView
               players={players}
               onAddTransaction={handleAddTransaction}
-              onEditTransaction={onEditTransaction}
+              onEditTransaction={handleEditTransaction}
               onDeleteTransaction={onDeleteTransaction}
               isSessionEnded={isSessionEnded}
             />
