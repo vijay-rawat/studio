@@ -174,72 +174,72 @@ export function FullLedgerView({
 
                            return (
                              <AccordionItem value={tx.id} key={tx.id} className="border-b last:border-b-0">
-                               <AccordionTrigger className={cn("px-4 py-3 hover:no-underline text-sm w-full", isDeleted && "opacity-50 bg-destructive/5 hover:bg-destructive/10")}>
-                                 <div className="flex justify-between items-center w-full">
-                                    <div className="flex items-center gap-3">
-                                        <ActionIcon action={tx.action} />
-                                        <div className="text-left">
-                                            <p className={cn("font-medium", isDeleted && "line-through")}>{tx.description}</p>
-                                            <p className="text-xs text-muted-foreground">Last action: {format(new Date(tx.timestamp), "MMM d, p")}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                      <span className={cn(
-                                          "font-semibold",
-                                          tx.amount > 0 && !isDeleted ? "text-emerald-500" : "",
-                                          tx.amount < 0 && !isDeleted ? "text-destructive" : "",
-                                          isDeleted && "text-muted-foreground"
-                                      )}>
-                                          {isDeleted ? 'Deleted' : `${tx.amount > 0 ? '+' : ''}${tx.amount.toFixed(2)} Rs.`}
-                                      </span>
-                                      {!isDeleted && (
-                                        <div className="flex gap-1 justify-end">
+                              <div className={cn("flex justify-between items-center w-full text-sm", isDeleted && "opacity-50 bg-destructive/5 hover:bg-destructive/10")}>
+                                <AccordionTrigger className="px-4 py-3 hover:no-underline flex-1">
+                                  <div className="flex items-center gap-3 text-left">
+                                      <ActionIcon action={tx.action} />
+                                      <div>
+                                          <p className={cn("font-medium", isDeleted && "line-through")}>{tx.description}</p>
+                                          <p className="text-xs text-muted-foreground">Last action: {format(new Date(tx.timestamp), "MMM d, p")}</p>
+                                      </div>
+                                  </div>
+                                </AccordionTrigger>
+                                <div className="flex items-center gap-4 px-4">
+                                  <span className={cn(
+                                      "font-semibold",
+                                      tx.amount > 0 && !isDeleted ? "text-emerald-500" : "",
+                                      tx.amount < 0 && !isDeleted ? "text-destructive" : "",
+                                      isDeleted && "text-muted-foreground"
+                                  )}>
+                                      {isDeleted ? 'Deleted' : `${tx.amount > 0 ? '+' : ''}${tx.amount.toFixed(2)} Rs.`}
+                                  </span>
+                                  {!isDeleted && (
+                                    <div className="flex gap-1 justify-end">
+                                        <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7"
+                                        onClick={(e) => { e.stopPropagation(); handleOpenEditDialog(player, tx); }}
+                                        disabled={arePlayerActionsDisabled}
+                                        aria-label="Edit transaction"
+                                        >
+                                        <Edit3 className="h-4 w-4" />
+                                        </Button>
+                                        <AlertDialog>
+                                        <AlertDialogTrigger asChild>
                                             <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="h-7 w-7"
-                                            onClick={(e) => { e.stopPropagation(); handleOpenEditDialog(player, tx); }}
+                                            className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                                             disabled={arePlayerActionsDisabled}
-                                            aria-label="Edit transaction"
+                                            aria-label="Delete transaction"
+                                            onClick={(e) => e.stopPropagation()}
                                             >
-                                            <Edit3 className="h-4 w-4" />
+                                            <Trash2 className="h-4 w-4" />
                                             </Button>
-                                            <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                disabled={arePlayerActionsDisabled}
-                                                aria-label="Delete transaction"
-                                                onClick={(e) => e.stopPropagation()}
-                                                >
-                                                <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                <AlertDialogTitle>Delete Transaction?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    Are you sure you want to delete this transaction for {player.name}: "{tx.description}"? This action will be logged and cannot be fully undone.
-                                                </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction
-                                                    onClick={() => onDeleteTransaction(player.id, tx.id)}
-                                                    className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-                                                >
-                                                    Delete
-                                                </AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                            </AlertDialog>
-                                        </div>
-                                      )}
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                            <AlertDialogTitle>Delete Transaction?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Are you sure you want to delete this transaction for {player.name}: "{tx.description}"? This action will be logged and cannot be fully undone.
+                                            </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction
+                                                onClick={() => onDeleteTransaction(player.id, tx.id)}
+                                                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                                            >
+                                                Delete
+                                            </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                        </AlertDialog>
                                     </div>
-                                 </div>
-                               </AccordionTrigger>
+                                  )}
+                                </div>
+                              </div>
                                <AccordionContent>
                                  <TransactionHistory tx={tx} />
                                </AccordionContent>
