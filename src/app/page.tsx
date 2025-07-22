@@ -416,7 +416,7 @@ export default function PokerTrackerPage() {
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction onClick={handleEndSession} className="bg-accent hover:bg-accent/90 text-accent-foreground">
-                              Yes, End & Archive
+                              Yes, End &amp; Archive
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -456,7 +456,7 @@ export default function PokerTrackerPage() {
                     onUpdateInitialBalance={handleUpdateInitialBalance}
                     onAddTransaction={handleAddTransaction}
                     onEditTransaction={handleEditTransaction}
-                    onDeleteTransaction={onDeleteTransaction}
+                    onDeleteTransaction={handleDeleteTransaction}
                     onDeletePlayer={handleDeletePlayer}
                     onCashOutPlayer={handleCashOutPlayer}
                     isSessionEnded={isSessionEnded}
@@ -491,7 +491,7 @@ export default function PokerTrackerPage() {
               players={players}
               onAddTransaction={handleAddTransaction}
               onEditTransaction={handleEditTransaction}
-              onDeleteTransaction={onDeleteTransaction}
+              onDeleteTransaction={handleDeleteTransaction}
               isSessionEnded={isSessionEnded}
             />
           </TabsContent>
@@ -511,4 +511,5 @@ export default function PokerTrackerPage() {
       </footer>
     </div>
   );
-}
+
+    
